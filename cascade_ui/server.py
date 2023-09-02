@@ -6,7 +6,7 @@ import os
 from cascade.base import MetaHandler, supported_meta_formats
 from cascade import models as cdm
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
 
 
@@ -38,6 +38,7 @@ class Server:
             raise ValueError(f"Cannot start UI in {type}, workspace only")
 
         self._ws_meta = meta
+        self._ws = cdm.Workspace(path)
 
     async def root_page(self) -> HTMLResponse:
         root = os.path.join(os.path.dirname(SCRIPT_DIR), "web", "index.html")
@@ -47,6 +48,14 @@ class Server:
 
     async def repos_page(self):
         return HTMLResponse()
+
+    async def repos_list(self):
+        self._ws.reload()
+        return JSONResponse({
+            "list": [
+                self._ws.get_repo_names()
+            ]
+        })
 
 
 if __name__ == "__main__":
@@ -67,5 +76,6 @@ if __name__ == "__main__":
     app = FastAPI()
     app.add_api_route("/", server.root_page, methods=["get"])
     app.add_api_route("/repos", server.repos_page, methods=["get"])
+    app.add_api_route("/v1/repos/list", server.repos_list, methods=["post"])
 
     uvicorn.run(app)
