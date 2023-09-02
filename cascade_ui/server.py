@@ -9,11 +9,16 @@ app = FastAPI()
 
 
 @app.get("/")
-def root():
+def root() -> HTMLResponse:
     root = os.path.join(os.path.dirname(SCRIPT_DIR), "web", "index.html")
     with open(root, "r") as f:
         html = f.read()
     return HTMLResponse(content=html)
+
+
+@app.get("/repos")
+def repos():
+    return HTMLResponse()
 
 
 if __name__ == "__main__":
