@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import glob
 import logging
+from typing import List
 import os
 
 from cascade.base import MetaHandler, supported_meta_formats
@@ -49,11 +50,21 @@ class Server:
     async def repos_page(self):
         return HTMLResponse()
 
-    async def repos_list(self):
+    def _repo_lengths(self) -> List[int]:
+        return [len(self._ws[name]) for name in self._ws.get_repo_names()]
+
+    async def repos(self):
         self._ws.reload()
         return JSONResponse({
-            "list": [
-                self._ws.get_repo_names()
+            "repos": [
+                {
+                    "name": name,
+                    "len": length
+                }
+                for name, length in zip(
+                    self._ws.get_repo_names(),
+                    self._repo_lengths()
+                )
             ]
         })
 
@@ -76,6 +87,6 @@ if __name__ == "__main__":
     app = FastAPI()
     app.add_api_route("/", server.root_page, methods=["get"])
     app.add_api_route("/repos", server.repos_page, methods=["get"])
-    app.add_api_route("/v1/repos/list", server.repos_list, methods=["post"])
+    app.add_api_route("/v1/repos", server.repos, methods=["post", "get"])
 
     uvicorn.run(app)
