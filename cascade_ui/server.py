@@ -8,10 +8,15 @@ from cascade.base import MetaHandler, supported_meta_formats
 from cascade import models as cdm
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
+import pydantic
 import uvicorn
 
 
 SCRIPT_DIR = os.path.dirname(__file__)
+
+
+class Repo(pydantic.BaseModel):
+    name: str
 
 
 class Server:
@@ -53,8 +58,7 @@ class Server:
     def _repo_lengths(self) -> List[int]:
         return [len(self._ws[name]) for name in self._ws.get_repo_names()]
 
-    async def repos(self):
-        self._ws.reload()
+    async def repos(self) -> JSONResponse:
         return JSONResponse({
             "repos": [
                 {
@@ -65,6 +69,25 @@ class Server:
                     self._ws.get_repo_names(),
                     self._repo_lengths()
                 )
+            ]
+        })
+
+    async def lines(self, repo: Repo) -> JSONResponse:
+        if repo.name not in self._ws.get_repo_names():
+            return JSONResponse({"error": f"{repo.name} is not in the Workspace"}, status_code=400)
+
+        repo = self._ws[repo.name]
+
+        line_names = repo.get_line_names()
+        line_lengths = [len(repo[line]) for line in line_names]
+
+        return JSONResponse({
+            "lines": [
+                {
+                    "name": name,
+                    "len": length
+                }
+                for name, length in zip(line_names, line_lengths)
             ]
         })
 
@@ -87,6 +110,7 @@ if __name__ == "__main__":
     app = FastAPI()
     app.add_api_route("/", server.root_page, methods=["get"])
     app.add_api_route("/repos", server.repos_page, methods=["get"])
-    app.add_api_route("/v1/repos", server.repos, methods=["post", "get"])
+    app.add_api_route("/v1/repos", server.repos, methods=["post"])
+    app.add_api_route("/v1/lines", server.lines, methods=["post"])
 
     uvicorn.run(app)
