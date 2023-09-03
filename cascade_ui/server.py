@@ -41,6 +41,8 @@ class Model(pydantic.BaseModel):
     params: Dict[str, Any]
     comments: List[Dict[Any, Any]]
     meta: List[Dict[str, Any]]
+    artifacts: List[str]
+    files: List[str]
 
 
 class Server:
@@ -92,6 +94,7 @@ class Server:
     async def model(self, ps: ModelPathSpec) -> Model:
         line = self._ws[ps.repo][ps.line]
         meta = line.load_model_meta(ps.num)
+        files = line.load_artifact_paths(ps.num)
 
         return Model(
             path=meta[0]["path"],
@@ -103,7 +106,9 @@ class Server:
             metrics=meta[0]["metrics"],
             params=meta[0]["params"],
             comments=meta[0]["comments"],
-            meta=meta
+            meta=meta,
+            artifacts=files["artifacts"],
+            files=files["files"],
         )
 
 
