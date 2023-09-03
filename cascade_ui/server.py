@@ -7,7 +7,7 @@ import os
 from cascade.base import MetaHandler, supported_meta_formats
 from cascade import models as cdm
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 import pydantic
 import uvicorn
 
@@ -15,8 +15,18 @@ import uvicorn
 SCRIPT_DIR = os.path.dirname(__file__)
 
 
+class Container(pydantic.BaseModel):
+    name: str
+    len: int
+
+
 class Repo(pydantic.BaseModel):
     name: str
+
+
+class ModelPathSpec(pydantic.BaseModel):
+    repo: str
+    line: str
 
 
 class Server:
@@ -46,41 +56,24 @@ class Server:
         self._ws_meta = meta
         self._ws = cdm.Workspace(path)
 
-    def _repo_lengths(self) -> List[int]:
-        return [len(self._ws[name]) for name in self._ws.get_repo_names()]
+    async def repos(self) -> List[Container]:
+        repo_names = self._ws.get_repo_names()
+        repo_lengths = [len(self._ws[name]) for name in repo_names]
 
-    async def repos(self) -> JSONResponse:
-        return JSONResponse({
-            "repos": [
-                {
-                    "name": name,
-                    "len": length
-                }
-                for name, length in zip(
-                    self._ws.get_repo_names(),
-                    self._repo_lengths()
-                )
+        return [
+                Container(name=name, len=length)
+                for name, length in zip(repo_names, repo_lengths)
             ]
-        })
 
-    async def lines(self, repo: Repo) -> JSONResponse:
-        if repo.name not in self._ws.get_repo_names():
-            return JSONResponse({"error": f"{repo.name} is not in the Workspace"}, status_code=400)
-
+    async def lines(self, repo: Repo) -> List[Container]:
         repo = self._ws[repo.name]
-
         line_names = repo.get_line_names()
         line_lengths = [len(repo[line]) for line in line_names]
 
-        return JSONResponse({
-            "lines": [
-                {
-                    "name": name,
-                    "len": length
-                }
+        return [
+                Container(name=name, len=length)
                 for name, length in zip(line_names, line_lengths)
             ]
-        })
 
 
 if __name__ == "__main__":
@@ -98,7 +91,7 @@ if __name__ == "__main__":
 
     server = Server(cwd)
 
-    app = FastAPI()
+    app = FastAPI(title="CascadeUI Backend")
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
 
