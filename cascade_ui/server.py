@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import glob
 import logging
-from typing import List
+from typing import List, Dict, Any, Union
 import os
 
 from cascade.base import MetaHandler, supported_meta_formats
@@ -27,6 +27,20 @@ class Repo(pydantic.BaseModel):
 class ModelPathSpec(pydantic.BaseModel):
     repo: str
     line: str
+    num: int
+
+
+class Model(pydantic.BaseModel):
+    path: str
+    slug: str
+    description: Union[str, None]
+    tags: Union[str, List[str]]
+    created_at: str
+    saved_at: str
+    metrics: Dict[str, Any]
+    params: Dict[str, Any]
+    comments: List[Dict[Any, Any]]
+    meta: List[Dict[str, Any]]
 
 
 class Server:
@@ -75,6 +89,23 @@ class Server:
                 for name, length in zip(line_names, line_lengths)
             ]
 
+    async def model(self, ps: ModelPathSpec) -> Model:
+        line = self._ws[ps.repo][ps.line]
+        meta = line.load_model_meta(ps.num)
+
+        return Model(
+            path=meta[0]["path"],
+            slug=meta[0]["slug"],
+            description=meta[0]["description"],
+            tags=meta[0]["tags"],
+            created_at=meta[0]["created_at"],
+            saved_at=meta[0]["saved_at"],
+            metrics=meta[0]["metrics"],
+            params=meta[0]["params"],
+            comments=meta[0]["comments"],
+            meta=meta
+        )
+
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO")
@@ -94,5 +125,6 @@ if __name__ == "__main__":
     app = FastAPI(title="CascadeUI Backend")
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
+    app.add_api_route("/v1/model", server.model, methods=["post"])
 
     uvicorn.run(app)
