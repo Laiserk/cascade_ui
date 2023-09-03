@@ -46,15 +46,6 @@ class Server:
         self._ws_meta = meta
         self._ws = cdm.Workspace(path)
 
-    async def root_page(self) -> HTMLResponse:
-        root = os.path.join(os.path.dirname(SCRIPT_DIR), "web", "index.html")
-        with open(root, "r") as f:
-            html = f.read()
-        return HTMLResponse(content=html)
-
-    async def repos_page(self):
-        return HTMLResponse()
-
     def _repo_lengths(self) -> List[int]:
         return [len(self._ws[name]) for name in self._ws.get_repo_names()]
 
@@ -108,8 +99,6 @@ if __name__ == "__main__":
     server = Server(cwd)
 
     app = FastAPI()
-    app.add_api_route("/", server.root_page, methods=["get"])
-    app.add_api_route("/repos", server.repos_page, methods=["get"])
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
 
