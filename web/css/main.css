@@ -1,0 +1,11 @@
+header
+{
+    display: block;
+    background-color: #084C61;
+}
+
+.logo
+{
+    height: 60px;
+    width: 60px;
+}
