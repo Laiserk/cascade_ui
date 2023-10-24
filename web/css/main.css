@@ -1,11 +1,16 @@
-header
-{
-    display: block;
+.navbar {
+    width: 100%;
+    height: 60px;
     background-color: #084C61;
 }
 
-.logo
-{
-    height: 60px;
-    width: 60px;
+.navbar .container {
+    height: inherit;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+body{
+    margin: 0px;
 }
