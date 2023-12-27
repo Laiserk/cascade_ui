@@ -5,3 +5,9 @@
           fill="white"/>
   </svg>
 </template>
+
+<style>
+.icon {
+  margin-right: 10px
+}
+</style>

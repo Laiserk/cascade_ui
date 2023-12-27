@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import IconGitHub from '../components/icons/IconGithub.vue'
 </script>
 
 <template>
@@ -12,7 +13,9 @@
     <div class="container">
       <img class="logo" src="../assets/logo.svg" alt="">
       <a href="https://github.com/Oxid15/cascade">
-        <img class="icon" style="margin-right: 10px;" src="src/components/icons/github.svg" alt="">
+        <div class="icon">
+          <IconGitHub/>
+        </div>
       </a>
     </div>
 
