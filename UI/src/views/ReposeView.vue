@@ -3,6 +3,6 @@
 
 <template>
   <main>
-    <p>Home</p>
+    <p>Repose</p>
   </main>
 </template>
