@@ -1,35 +1,45 @@
 @import './base.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-
-  font-weight: normal;
+.navbar {
+  width: 100%;
+  height: 60px;
+  background-color: #084C61;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
+.navbar .container {
+  height: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.sidebar {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  width: 60px;
+  background-color: #D9D9D9;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+.logo {
+  width: 60px;
+  height: 60px;
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+.icon {
+  width: 38px;
+  height: 38px;
+  fill: #919191;
+}
+
+.icon:hover {
+  fill: #084C61;
+}
+
+.sidebar ul li {
+  position: relative;
+  list-style-type: none;
+  height: 50px;
+  width: 70%;
+  margin: 1.2rem auto;
 }
