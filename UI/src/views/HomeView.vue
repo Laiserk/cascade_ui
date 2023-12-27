@@ -5,14 +5,14 @@
   <head>
     <meta charset="utf-8"/>
     <title>List of experiments</title>
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="src/assets/main.css">
   </head>
   <body>
   <nav class="navbar">
     <div class="container">
-      <img class="logo" src="imges\logo_sq.svg">
+      <img class="logo" src="src/components/icons/logo_sq.svg" alt="">
       <a href="https://github.com/Oxid15/cascade">
-        <img class="icon" style="margin-right: 10px;" src="imges\github.svg">
+        <img class="icon" style="margin-right: 10px;" src="src/components/icons/github.svg" alt="">
       </a>
     </div>
 
