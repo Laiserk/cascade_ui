@@ -10,7 +10,7 @@
   <body>
   <nav class="navbar">
     <div class="container">
-      <img class="logo" src="src/components/icons/logo_sq.svg" alt="">
+      <img class="logo" src="../assets/logo.svg" alt="">
       <a href="https://github.com/Oxid15/cascade">
         <img class="icon" style="margin-right: 10px;" src="src/components/icons/github.svg" alt="">
       </a>
