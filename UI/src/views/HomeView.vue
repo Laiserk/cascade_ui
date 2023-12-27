@@ -13,7 +13,7 @@ import IconGitHub from '../components/icons/IconGithub.vue'
     <div class="container">
       <img class="logo" src="../assets/logo.svg" alt="">
       <a href="https://github.com/Oxid15/cascade">
-        <div class="icon">
+        <div class="icon" style="margin-right: 10px">
           <IconGitHub/>
         </div>
       </a>
