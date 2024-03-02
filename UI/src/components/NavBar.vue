@@ -6,11 +6,6 @@ import IconDataBase from "../components/icons/IconDataBase.vue";
 </script>
 
 <template>
-  <head>
-    <meta charset="utf-8"/>
-    <title>List of experiments</title>
-    <link rel="stylesheet" href="src/assets/main.css">
-  </head>
   <body>
   <nav class="navbar">
     <div class="container">
@@ -50,3 +45,50 @@ import IconDataBase from "../components/icons/IconDataBase.vue";
   </nav>
   </body>
 </template>
+
+<style scoped>
+.navbar {
+  width: 100%;
+  height: 60px;
+  background-color: #084C61;
+}
+
+.navbar .container {
+  height: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  width: 60px;
+  background-color: #D9D9D9;
+}
+
+.logo {
+  width: 60px;
+  height: 60px;
+}
+
+.icon {
+  width: 38px;
+  height: 38px;
+  fill: #919191;
+}
+
+.icon:hover {
+  fill: #084C61;
+}
+
+.sidebar ul li {
+  position: relative;
+  list-style-type: none;
+  height: 50px;
+  width: 70%;
+  margin: 1.2rem auto;
+}
+
+</style>
