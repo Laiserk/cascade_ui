@@ -25,7 +25,7 @@ import IconDataBase from "../components/icons/IconDataBase.vue";
     <div class="sidebar">
       <ul>
         <li>
-          <a href="/">
+          <a href="/main">
             <div class="icon">
               <IconHome/>
             </div>
