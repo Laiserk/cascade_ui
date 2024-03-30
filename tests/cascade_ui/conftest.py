@@ -14,6 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__version__ = "0.1.0"
-__author__ = "Oleg Sevostyanov,Ilia Moiseev"
-__author_email__ = "ilia.moiseev.5@yandex.ru"
+from cascade.models import BasicModel, Workspace
+from pytest import fixture
+
+
+@fixture
+def workspace(tmp_path) -> Workspace:
+    tmp_path = str(tmp_path)
+    ws = Workspace(tmp_path)
+    repo = ws.add_repo("repo")
+    line = repo.add_line(model_cls=BasicModel)
+    model = BasicModel()
+    model.evaluate()
+
+    line.save(model)
+
+    return workspace
