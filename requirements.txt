@@ -1,4 +1,4 @@
 cascade-ml>=0.12.0,<0.13
-fastapi
-uvicorn
-pydantic
+fastapi==0.110.0
+uvicorn==0.29.0
+pydantic==2.6.4
