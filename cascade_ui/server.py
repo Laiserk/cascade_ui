@@ -1,5 +1,5 @@
 """
-Copyright 2023 Oleg Sevostyanov, Ilia Moiseev
+Copyright 2023-2024 Oleg Sevostyanov, Ilia Moiseev
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,19 +15,18 @@ limitations under the License.
 """
 
 
-from argparse import ArgumentParser
 import glob
 import logging
-from typing import List, Dict, Any, Union
 import os
+from argparse import ArgumentParser
+from typing import Any, Dict, List, Union
 
-from cascade.base import MetaHandler, supported_meta_formats
-from cascade import models as cdm
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 import pydantic
 import uvicorn
-
+from cascade import models as cdm
+from cascade.base import MetaHandler, supported_meta_formats
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 SCRIPT_DIR = os.path.dirname(__file__)
 

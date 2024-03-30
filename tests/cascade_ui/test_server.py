@@ -1,5 +1,5 @@
 """
-Copyright 2023 Oleg Sevostyanov, Ilia Moiseev
+Copyright 2023-2024 Oleg Sevostyanov, Ilia Moiseev
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
 sys.path.append(BASE_DIR)
-from cascade_ui.server import Server, ModelPathSpec
+from cascade_ui.server import ModelPathSpec, Server
 
 
 @pytest.mark.asyncio
