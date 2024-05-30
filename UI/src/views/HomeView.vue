@@ -3,6 +3,8 @@ import NavBar from "../components/NavBar.vue";
 import Content from "../components/Content.vue";
 import PageTitle from "@/components/PageTitle.vue";
 import ListElements from "@/components/ListElements.vue";
+import Label from "@/components/Label.vue";
+import SubLabel from "@/components/SubLabel.vue";
 </script>
 
 <template>
@@ -20,7 +22,44 @@ import ListElements from "@/components/ListElements.vue";
       Welcome to Cascade!
     </PageTitle>
     <ListElements>
-
+      <ul>
+        <li>
+          <a>
+            <div>
+              <Label>
+                repo_1
+              </Label>
+              <SubLabel>
+                01-09-2023
+              </SubLabel>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a>
+            <div>
+              <Label>
+                repo_2
+              </Label>
+              <SubLabel>
+                01-09-2023
+              </SubLabel>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a>
+            <div>
+              <Label>
+                repo_3
+              </Label>
+              <SubLabel>
+                01-09-2023
+              </SubLabel>
+            </div>
+          </a>
+        </li>
+      </ul>
     </ListElements>
   </Content>
   </body>
