@@ -19,7 +19,7 @@ cd dummy_workspace
 Run server inside this workspace
 
 ```bash
-python3 cascade_ui/server.py
+python3 ../cascade_ui/server.py
 ```
 
 This will run a uvicorn server with
