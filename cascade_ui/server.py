@@ -26,7 +26,7 @@ import uvicorn
 from cascade import models as cdm
 from cascade.base import MetaHandler, supported_meta_formats
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -144,6 +144,7 @@ if __name__ == "__main__":
     server = Server(cwd)
 
     app = FastAPI(title="CascadeUI Backend")
+    app.mount("/", StaticFiles(directory="../UI/dist", html=True), name="static")
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
