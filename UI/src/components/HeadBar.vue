@@ -9,10 +9,10 @@
   </div>
 </template>
 <script>
-import IconGithub from "@/components/icons/IconGithub.vue";
+import IconGitHub from "@/components/icons/IconGithub.vue";
 
 export default {
   name: 'HeadBar',
-  components: {IconGithub}
+  components: {IconGitHub}
 }
 </script>
