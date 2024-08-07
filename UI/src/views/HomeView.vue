@@ -10,5 +10,16 @@ import NavBar from "../components/NavBar.vue";
   </head>
   <body>
   <NavBar/>
+
+  <v-breadcrumbs :items="['Workspace']">
+    <template v-slot:prepend>
+      <v-icon icon="$vuetify" size="small"></v-icon>
+    </template>
+  </v-breadcrumbs>
   </body>
 </template>
+
+
+<style>
+
+</style>
