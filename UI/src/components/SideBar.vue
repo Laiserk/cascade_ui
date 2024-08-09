@@ -25,13 +25,8 @@
     </ul>
   </div>
 </template>
-<script>
+<script lang="ts" setup>
 import IconInventory from "@/components/icons/IconInventory.vue";
 import IconDataBase from "@/components/icons/IconDataBase.vue";
 import IconHome from "@/components/icons/IconHome.vue";
-
-export default {
-  name: 'SideBar',
-  components: {IconHome, IconDataBase, IconInventory}
-}
 </script>
