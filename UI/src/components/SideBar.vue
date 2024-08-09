@@ -25,6 +25,25 @@
     </ul>
   </div>
 </template>
+
+<style>
+.sidebar {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  width: 60px;
+  background-color: #D9D9D9;
+}
+
+.sidebar ul li {
+  position: relative;
+  list-style-type: none;
+  height: 50px;
+  width: 70%;
+  margin: 1.2rem auto;
+}
+</style>
+
 <script lang="ts" setup>
 import IconInventory from "@/components/icons/IconInventory.vue";
 import IconDataBase from "@/components/icons/IconDataBase.vue";

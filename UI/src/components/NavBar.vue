@@ -1,6 +1,3 @@
-<script lang="ts" setup>
-import HeadBar from "@/components/HeadBar.vue"
-</script>
 
 <template>
   <head>
@@ -14,3 +11,11 @@ import HeadBar from "@/components/HeadBar.vue"
   </nav>
   </body>
 </template>
+
+<style>
+
+</style>
+
+<script lang="ts" setup>
+import HeadBar from "@/components/HeadBar.vue"
+</script>

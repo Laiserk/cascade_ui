@@ -18,6 +18,12 @@
   height: 60px;
   background-color: #084C61;
 }
+
+.logo {
+  width: 60px;
+  height: 60px;
+}
+
 </style>
 
 <script lang="ts" setup>
