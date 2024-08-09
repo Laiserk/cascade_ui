@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
+import {useFetch} from '../scripts/useFetch.ts'
+
+const {data, error} = useFetch('https://jsonplaceholder.typicode.com/todos/1')
+
 </script>
 
 <template>
@@ -16,9 +20,15 @@ import NavBar from "../components/NavBar.vue";
   <body>
   <NavBar/>
   <div class="content">
+    <pre>{{ data }}</pre>
     <v-breadcrumbs :items="['Workspace', 'Workspace1']"></v-breadcrumbs>
     <div class="welcome">
       Welcome to Cascade!
+    </div>
+
+    <div class="apiResult">
+
+
     </div>
 
     <div class="listItem">
