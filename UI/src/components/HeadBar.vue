@@ -8,11 +8,6 @@
     </a>
   </div>
 </template>
-<script>
+<script lang="ts" setup>
 import IconGitHub from "@/components/icons/IconGithub.vue";
-
-export default {
-  name: 'HeadBar',
-  components: {IconGitHub}
-}
 </script>
