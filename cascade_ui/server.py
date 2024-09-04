@@ -125,7 +125,6 @@ class Server:
             metrics=meta[0]["metrics"],
             params=meta[0]["params"],
             comments=meta[0]["comments"],
-            meta=meta,
             artifacts=files["artifacts"],
             files=files["files"],
         )
