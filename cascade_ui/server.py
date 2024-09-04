@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
 import glob
 import logging
 import os
@@ -23,16 +22,20 @@ from typing import Any, Dict, List, Union
 
 import pydantic
 import uvicorn
-from cascade import models as cdm
 from cascade.base import MetaHandler, supported_meta_formats
+from cascade.lines import DataLine, ModelLine
+from cascade.workspaces import Workspace
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
+CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
+
 
 class Container(pydantic.BaseModel):
     name: str
+    type: str
     len: int
 
 
@@ -65,9 +68,7 @@ class Server:
     def __init__(self, path: str) -> None:
         meta_paths = glob.glob(os.path.join(path, "meta.*"))
         meta_paths = [
-            path
-            for path in meta_paths
-            if os.path.splitext(path)[-1] in supported_meta_formats
+            path for path in meta_paths if os.path.splitext(path)[-1] in supported_meta_formats
         ]
 
         if len(meta_paths) != 1:
@@ -83,29 +84,31 @@ class Server:
             raise ValueError(f"No type key in meta in {path}")
 
         if meta_type != "workspace":
-            raise ValueError(f"Cannot start UI in {type}, workspace only")
+            raise ValueError(f"Cannot start UI in {type}, workspaces only")
 
         self._ws_meta = meta
-        self._ws = cdm.Workspace(path)
+        self._ws = Workspace(path)
 
     async def repos(self) -> List[Container]:
         repo_names = self._ws.get_repo_names()
         repo_lengths = [len(self._ws[name]) for name in repo_names]
 
         return [
-                Container(name=name, len=length)
-                for name, length in zip(repo_names, repo_lengths)
-            ]
+            Container(name=name, type="repo", len=length)
+            for name, length in zip(repo_names, repo_lengths)
+        ]
 
     async def lines(self, repo: Repo) -> List[Container]:
         repo = self._ws[repo.name]
-        line_names = repo.get_line_names()
-        line_lengths = [len(repo[line]) for line in line_names]
+        names = repo.get_line_names()
+        lines = [repo[line] for line in names]
+        types = [CLS2TYPE[type(line)] for line in lines]
+        lens = [len(line) for line in lines]
 
         return [
-                Container(name=name, len=length)
-                for name, length in zip(line_names, line_lengths)
-            ]
+            Container(name=name, type=type_, len=length)
+            for name, type_, length in zip(names, types, lens)
+        ]
 
     async def model(self, ps: ModelPathSpec) -> Model:
         line = self._ws[ps.repo][ps.line]
@@ -143,8 +146,14 @@ if __name__ == "__main__":
 
     server = Server(cwd)
 
+    module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     app = FastAPI(title="CascadeUI Backend")
-    app.mount("/", StaticFiles(directory="../UI/dist", html=True), name="static")
+    app.mount(
+        "/ui",
+        StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
+        name="static",
+    )
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
