@@ -18,7 +18,7 @@ import glob
 import logging
 import os
 from argparse import ArgumentParser
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic
 import uvicorn
@@ -50,18 +50,22 @@ class ModelPathSpec(pydantic.BaseModel):
 
 
 class Model(pydantic.BaseModel):
-    path: str
     slug: str
-    description: Union[str, None]
-    tags: Union[str, List[str]]
+    path: str
     created_at: str
     saved_at: str
-    metrics: Dict[str, Any]
-    params: Dict[str, Any]
+    user: str
+    host: str
+    python_version: str
+    description: Union[str, None]
     comments: List[Dict[Any, Any]]
-    meta: List[Dict[str, Any]]
+    tags: Union[str, List[str]]
+    params: Dict[str, Any]
+    metrics: List[Dict[str, Any]]
     artifacts: List[str]
     files: List[str]
+    git_commit: Optional[str] = None
+    git_uncommitted_changes: Optional[List[str]] = None
 
 
 class Server:
@@ -89,7 +93,7 @@ class Server:
         self._ws_meta = meta
         self._ws = Workspace(path)
 
-    async def repos(self) -> List[Container]:
+    def repos(self) -> List[Container]:
         repo_names = self._ws.get_repo_names()
         repo_lengths = [len(self._ws[name]) for name in repo_names]
 
@@ -98,7 +102,7 @@ class Server:
             for name, length in zip(repo_names, repo_lengths)
         ]
 
-    async def lines(self, repo: Repo) -> List[Container]:
+    def lines(self, repo: Repo) -> List[Container]:
         repo = self._ws[repo.name]
         names = repo.get_line_names()
         lines = [repo[line] for line in names]
@@ -110,23 +114,30 @@ class Server:
             for name, type_, length in zip(names, types, lens)
         ]
 
-    async def model(self, ps: ModelPathSpec) -> Model:
+    def model(self, ps: ModelPathSpec) -> Model:
         line = self._ws[ps.repo][ps.line]
         meta = line.load_model_meta(ps.num)
         files = line.load_artifact_paths(ps.num)
 
         return Model(
-            path=meta[0]["path"],
             slug=meta[0]["slug"],
-            description=meta[0]["description"],
-            tags=meta[0]["tags"],
+            path=meta[0]["path"],
             created_at=meta[0]["created_at"],
             saved_at=meta[0]["saved_at"],
-            metrics=meta[0]["metrics"],
-            params=meta[0]["params"],
+            user=meta[0]["user"],
+            host=meta[0]["host"],
+            python_version=meta[0]["python_version"],
+            description=meta[0]["description"],
             comments=meta[0]["comments"],
+            tags=meta[0]["tags"],
+            params=meta[0]["params"],
+            metrics=meta[0]["metrics"],
             artifacts=files["artifacts"],
             files=files["files"],
+            git_commit=meta[0]["git_commit"] if "git_commit" in meta[0] else None,
+            git_uncommitted_changes=(
+                meta[0]["git_uncommitted_changes"] if "git_uncommitted_changes" in meta[0] else None
+            ),
         )
 
 
