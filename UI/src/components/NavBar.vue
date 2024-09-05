@@ -7,7 +7,6 @@
   <body>
   <nav>
     <HeadBar/>
-    <!--    <SideBar/>-->
   </nav>
   </body>
 </template>

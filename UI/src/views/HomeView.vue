@@ -1,8 +1,32 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import {useFetch} from '../scripts/useFetch.ts'
+import {useFetch} from "@vueuse/core"
 
-const {data, error} = useFetch('https://jsonplaceholder.typicode.com/todos/1')
+class Repo {
+  name: string | null;
+  type: string | null
+  len: number | null
+
+  constructor(name: string, type: string, len: number) {
+    this.name = name;
+    this.type = type;
+    this.len = len;
+  }
+}
+
+/*const useMyFetch = createFetch({
+  baseUrl: 'http://localhost:8000',
+  fetchOptions: {
+    method: "post",
+    mode: 'no-cors'
+  }
+});*/
+
+/*let data : Repo[] | null
+({ data } = useMyFetch('/v1/repos'));*/
+
+let data: Repo[]
+({data} = useFetch('http://localhost:8000/v1/repos', {mode: "no-cors"}).post());
 
 </script>
 
@@ -20,44 +44,26 @@ const {data, error} = useFetch('https://jsonplaceholder.typicode.com/todos/1')
   <body>
   <NavBar/>
   <div class="content">
-    <pre>{{ data }}</pre>
     <v-breadcrumbs :items="['Workspace', 'Workspace1']"></v-breadcrumbs>
     <div class="welcome">
       Welcome to Cascade!
+      {{ data }}
     </div>
-
-    <div class="apiResult">
-
-
-    </div>
-
-    <div class="listItem">
-      <v-card>
-        <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
-          repos/repo1
-        </v-card-title>
-        <v-card-subtitle style="font-family: Roboto,serif; font-size: 14px;">
-          6 lines
-        </v-card-subtitle>
-        <v-card-actions>
-          <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </div>
-    <div class="listItem">
-      <v-card>
-        <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
-          repos/repo1
-        </v-card-title>
-        <v-card-subtitle style="font-family: Roboto,serif; font-size: 14px;">
-          6 lines
-        </v-card-subtitle>
-        <v-card-actions>
-          <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+    <div v-for="item in data">
+      <div class="listItem">
+        <v-card>
+          <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
+            {{ item.name }}
+          </v-card-title>
+          <v-card-subtitle style="font-family: Roboto,serif; font-size: 14px;">
+            {{ item.len }} lines
+          </v-card-subtitle>
+          <v-card-actions>
+            <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </div>
 
   </div>
