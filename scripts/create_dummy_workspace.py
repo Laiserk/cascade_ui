@@ -1,6 +1,8 @@
 import os
 
-from cascade.models import BasicModel, ModelRepo, Workspace
+from cascade.models import BasicModel
+from cascade.repos import Repo
+from cascade.workspaces import Workspace
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -12,16 +14,16 @@ if __name__ == "__main__":
         raise FileExistsError("The workspace already exists at this path!") from e
     ws = Workspace(ws_path)
 
-    repo = ModelRepo(os.path.join(ws_path, "repo_1"))
+    repo = Repo(os.path.join(ws_path, "repo_1"))
     for i in range(5):
-        line = repo.add_line()
+        line = repo.add_line(line_type="model")
         model = BasicModel()
-        # Don't have this in 0.12.0 yet
-        # model.describe("Hello")
-        # model.comment("This is a comment")
-        # model.tag(["tag1"])
+        model.describe("Hello")
+        model.comment("This is a comment")
+        model.tag(["tag1"])
+        line.save(BasicModel(), only_meta=True)
 
-    repo = ModelRepo(os.path.join(ws_path, "repo_2"))
+    repo = Repo(os.path.join(ws_path, "repo_2"))
     for i in range(5):
         line = repo.add_line()
         line.save(BasicModel(), only_meta=True)

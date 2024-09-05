@@ -14,25 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
 import glob
 import logging
 import os
 from argparse import ArgumentParser
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic
 import uvicorn
-from cascade import models as cdm
 from cascade.base import MetaHandler, supported_meta_formats
+from cascade.lines import DataLine, ModelLine
+from cascade.workspaces import Workspace
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
+CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
+
 
 class Container(pydantic.BaseModel):
     name: str
+    type: str
     len: int
 
 
@@ -47,27 +50,29 @@ class ModelPathSpec(pydantic.BaseModel):
 
 
 class Model(pydantic.BaseModel):
-    path: str
     slug: str
-    description: Union[str, None]
-    tags: Union[str, List[str]]
+    path: str
     created_at: str
     saved_at: str
-    metrics: Dict[str, Any]
-    params: Dict[str, Any]
+    user: str
+    host: str
+    python_version: str
+    description: Union[str, None]
     comments: List[Dict[Any, Any]]
-    meta: List[Dict[str, Any]]
+    tags: Union[str, List[str]]
+    params: Dict[str, Any]
+    metrics: List[Dict[str, Any]]
     artifacts: List[str]
     files: List[str]
+    git_commit: Optional[str] = None
+    git_uncommitted_changes: Optional[List[str]] = None
 
 
 class Server:
     def __init__(self, path: str) -> None:
         meta_paths = glob.glob(os.path.join(path, "meta.*"))
         meta_paths = [
-            path
-            for path in meta_paths
-            if os.path.splitext(path)[-1] in supported_meta_formats
+            path for path in meta_paths if os.path.splitext(path)[-1] in supported_meta_formats
         ]
 
         if len(meta_paths) != 1:
@@ -83,48 +88,56 @@ class Server:
             raise ValueError(f"No type key in meta in {path}")
 
         if meta_type != "workspace":
-            raise ValueError(f"Cannot start UI in {type}, workspace only")
+            raise ValueError(f"Cannot start UI in {type}, workspaces only")
 
         self._ws_meta = meta
-        self._ws = cdm.Workspace(path)
+        self._ws = Workspace(path)
 
-    async def repos(self) -> List[Container]:
+    def repos(self) -> List[Container]:
         repo_names = self._ws.get_repo_names()
         repo_lengths = [len(self._ws[name]) for name in repo_names]
 
         return [
-                Container(name=name, len=length)
-                for name, length in zip(repo_names, repo_lengths)
-            ]
+            Container(name=name, type="repo", len=length)
+            for name, length in zip(repo_names, repo_lengths)
+        ]
 
-    async def lines(self, repo: Repo) -> List[Container]:
+    def lines(self, repo: Repo) -> List[Container]:
         repo = self._ws[repo.name]
-        line_names = repo.get_line_names()
-        line_lengths = [len(repo[line]) for line in line_names]
+        names = repo.get_line_names()
+        lines = [repo[line] for line in names]
+        types = [CLS2TYPE[type(line)] for line in lines]
+        lens = [len(line) for line in lines]
 
         return [
-                Container(name=name, len=length)
-                for name, length in zip(line_names, line_lengths)
-            ]
+            Container(name=name, type=type_, len=length)
+            for name, type_, length in zip(names, types, lens)
+        ]
 
-    async def model(self, ps: ModelPathSpec) -> Model:
+    def model(self, ps: ModelPathSpec) -> Model:
         line = self._ws[ps.repo][ps.line]
         meta = line.load_model_meta(ps.num)
         files = line.load_artifact_paths(ps.num)
 
         return Model(
-            path=meta[0]["path"],
             slug=meta[0]["slug"],
-            description=meta[0]["description"],
-            tags=meta[0]["tags"],
+            path=meta[0]["path"],
             created_at=meta[0]["created_at"],
             saved_at=meta[0]["saved_at"],
-            metrics=meta[0]["metrics"],
-            params=meta[0]["params"],
+            user=meta[0]["user"],
+            host=meta[0]["host"],
+            python_version=meta[0]["python_version"],
+            description=meta[0]["description"],
             comments=meta[0]["comments"],
-            meta=meta,
+            tags=meta[0]["tags"],
+            params=meta[0]["params"],
+            metrics=meta[0]["metrics"],
             artifacts=files["artifacts"],
             files=files["files"],
+            git_commit=meta[0]["git_commit"] if "git_commit" in meta[0] else None,
+            git_uncommitted_changes=(
+                meta[0]["git_uncommitted_changes"] if "git_uncommitted_changes" in meta[0] else None
+            ),
         )
 
 
@@ -143,8 +156,14 @@ if __name__ == "__main__":
 
     server = Server(cwd)
 
+    module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     app = FastAPI(title="CascadeUI Backend")
-    app.mount("/", StaticFiles(directory="../UI/dist", html=True), name="static")
+    app.mount(
+        "/ui",
+        StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
+        name="static",
+    )
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
