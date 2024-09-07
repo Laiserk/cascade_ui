@@ -164,7 +164,11 @@ if __name__ == "__main__":
     app.add_api_route("/v1/model", server.model, methods=["post"])
     app.mount(
         "/",
-        StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
+        StaticFiles(
+            directory=os.path.join(module_dir, "UI", "dist"),
+            html=True,
+            check_dir=True,
+        ),
         name="static",
     )
     uvicorn.run(app)
