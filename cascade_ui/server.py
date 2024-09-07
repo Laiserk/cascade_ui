@@ -176,7 +176,11 @@ if __name__ == "__main__":
     app = FastAPI(title="CascadeUI Backend")
     app.mount(
         "/",
-        StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
+        StaticFiles(
+            directory=os.path.join(module_dir, "UI", "dist"),
+            html=True,
+            check_dir=True,
+        ),
         name="static",
     )
     uvicorn.run(app)
