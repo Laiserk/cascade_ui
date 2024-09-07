@@ -33,14 +33,31 @@ SCRIPT_DIR = os.path.dirname(__file__)
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
 
 
-class Container(pydantic.BaseModel):
+class WorkspaceResponse(pydantic.BaseModel):
     name: str
-    type: str
     len: int
+    repos: List[str]
 
 
-class Repo(pydantic.BaseModel):
+class RepoPathSpec(pydantic.BaseModel):
+    repo: str
+
+
+class RepoResponse(pydantic.BaseModel):
     name: str
+    len: int
+    lines: List[str]
+
+
+class LinePathSpec(pydantic.BaseModel):
+    repo: str
+    line: str
+
+
+class LineResponse(pydantic.BaseModel):
+    name: str
+    len: int
+    models: List[str]
 
 
 class ModelPathSpec(pydantic.BaseModel):
@@ -92,15 +109,13 @@ class Server:
 
         self._ws_meta = meta
         self._ws = Workspace(path)
+        self._ws_name = self._ws.get_root()
 
-    def repos(self) -> List[Container]:
+    def workspace(self) -> Workspace:
         repo_names = self._ws.get_repo_names()
         repo_lengths = [len(self._ws[name]) for name in repo_names]
 
-        return [
-            Container(name=name, type="repo", len=length)
-            for name, length in zip(repo_names, repo_lengths)
-        ]
+        return Workspace(name=name, len=length)
 
     def lines(self, repo: Repo) -> List[Container]:
         repo = self._ws[repo.name]
@@ -164,13 +179,14 @@ if __name__ == "__main__":
         StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
         name="static",
     )
+    app.add_api_route("/v1/workspace", server.workspace, methods=["post"])
+    app.add_api_route("/v1/repo", server.repo, methods=["post"])
+    app.add_api_route("/v1/line", server.line, methods=["post"])
     app.mount(
         "/assets",
         StaticFiles(directory=os.path.join(module_dir, "UI", "dist", "assets"), html=True),
         name="static",
     )
-    app.add_api_route("/v1/repos", server.repos, methods=["post"])
-    app.add_api_route("/v1/lines", server.lines, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
 
     uvicorn.run(app)
