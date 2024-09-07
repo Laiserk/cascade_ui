@@ -159,18 +159,12 @@ if __name__ == "__main__":
     module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     app = FastAPI(title="CascadeUI Backend")
-    app.mount(
-        "/ui",
-        StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
-        name="static",
-    )
-    app.mount(
-        "/assets",
-        StaticFiles(directory=os.path.join(module_dir, "UI", "dist", "assets"), html=True),
-        name="static",
-    )
     app.add_api_route("/v1/repos", server.repos, methods=["post"])
     app.add_api_route("/v1/lines", server.lines, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
-
+    app.mount(
+        "/",
+        StaticFiles(directory=os.path.join(module_dir, "UI", "dist"), html=True),
+        name="static",
+    )
     uvicorn.run(app)
