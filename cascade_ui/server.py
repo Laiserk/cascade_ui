@@ -79,7 +79,6 @@ class ModelPathSpec(pydantic.BaseModel):
     num: int
 
 
-# TODO: add cwd too
 class ModelResponse(pydantic.BaseModel):
     slug: str
     path: str
@@ -87,6 +86,7 @@ class ModelResponse(pydantic.BaseModel):
     saved_at: str
     user: str
     host: str
+    cwd: str
     python_version: str
     description: Union[str, None]
     comments: List[Dict[Any, Any]]
@@ -111,6 +111,7 @@ class DatasetResponse(pydantic.BaseModel):
     saved_at: str
     user: str
     host: str
+    cwd: str
     python_version: str
     description: Union[str, None]
     comments: List[Dict[Any, Any]]
@@ -201,6 +202,7 @@ class Server:
             saved_at=meta[0]["saved_at"],
             user=meta[0]["user"],
             host=meta[0]["host"],
+            cwd=meta[0]["cwd"],
             python_version=meta[0]["python_version"],
             description=meta[0]["description"],
             comments=meta[0]["comments"],
@@ -225,6 +227,7 @@ class Server:
             saved_at=meta[0]["saved_at"],
             user=meta[0]["user"],
             host=meta[0]["host"],
+            cwd=meta[0]["cwd"],
             python_version=meta[0]["python_version"],
             description=meta[0]["description"],
             comments=meta[0]["comments"],
