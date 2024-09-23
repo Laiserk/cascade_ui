@@ -11,7 +11,6 @@ import HeadBar from "@/components/HeadBar.vue";
   <body>
   <nav class="navbar">
     <HeadBar/>
-    <!--    <SideBar/>-->
   </nav>
   </body>
 </template>
