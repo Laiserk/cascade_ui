@@ -13,11 +13,22 @@ Then create dummy workspace for tests
 
 ```bash
 python3 scripts/create_dummy_workspace.py
-cd dummy_workspace
 ```
 
 Run server inside this workspace
 
+```bash
+cd dummy_workspace
+venv\scripts\activate
+```
+
+Windows
+
+```bash
+python3 ../cascade_ui/server.py
+```
+
+Linux
 ```bash
 python3 ../cascade_ui/server.py
 ```

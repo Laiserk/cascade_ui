@@ -26,6 +26,7 @@ from cascade.base import MetaHandler, supported_meta_formats
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 from fastapi import FastAPI
+from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 
 SCRIPT_DIR = os.path.dirname(__file__)
@@ -35,12 +36,41 @@ CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
 
 class Container(pydantic.BaseModel):
     name: str
-    type: str
     len: int
 
 
-class Repo(pydantic.BaseModel):
+class WorkspaceResponse(Container):
+    repos: List[Container]
+
+
+class RepoPathSpec(pydantic.BaseModel):
+    repo: str
+
+
+class LineRow(Container):
+    type: str
+    created_at: str
+    updated_at: str
+
+
+class RepoResponse(Container):
+    lines: List[LineRow]
+
+
+class LinePathSpec(pydantic.BaseModel):
+    repo: str
+    line: str
+
+
+class ModelRow(pydantic.BaseModel):
     name: str
+    slug: str
+    created_at: str
+    saved_at: str
+
+
+class LineResponse(Container):
+    models: List[ModelRow]
 
 
 class ModelPathSpec(pydantic.BaseModel):
@@ -49,13 +79,14 @@ class ModelPathSpec(pydantic.BaseModel):
     num: int
 
 
-class Model(pydantic.BaseModel):
+class ModelResponse(pydantic.BaseModel):
     slug: str
     path: str
     created_at: str
     saved_at: str
     user: str
     host: str
+    cwd: str
     python_version: str
     description: Union[str, None]
     comments: List[Dict[Any, Any]]
@@ -64,6 +95,27 @@ class Model(pydantic.BaseModel):
     metrics: List[Dict[str, Any]]
     artifacts: List[str]
     files: List[str]
+    git_commit: Optional[str] = None
+    git_uncommitted_changes: Optional[List[str]] = None
+
+
+class DatasetPathSpec(pydantic.BaseModel):
+    repo: str
+    line: str
+    ver: str
+
+
+class DatasetResponse(pydantic.BaseModel):
+    name: str
+    path: str
+    saved_at: str
+    user: str
+    host: str
+    cwd: str
+    python_version: str
+    description: Union[str, None]
+    comments: List[Dict[Any, Any]]
+    tags: Union[str, List[str]]
     git_commit: Optional[str] = None
     git_uncommitted_changes: Optional[List[str]] = None
 
@@ -92,40 +144,65 @@ class Server:
 
         self._ws_meta = meta
         self._ws = Workspace(path)
+        self._ws_name = self._ws.get_root()
 
-    def repos(self) -> List[Container]:
+    def workspace(self) -> WorkspaceResponse:
         repo_names = self._ws.get_repo_names()
         repo_lengths = [len(self._ws[name]) for name in repo_names]
 
-        return [
-            Container(name=name, type="repo", len=length)
-            for name, length in zip(repo_names, repo_lengths)
-        ]
+        repos = [Container(name=name, len=length) for name, length in zip(repo_names, repo_lengths)]
 
-    def lines(self, repo: Repo) -> List[Container]:
-        repo = self._ws[repo.name]
-        names = repo.get_line_names()
-        lines = [repo[line] for line in names]
-        types = [CLS2TYPE[type(line)] for line in lines]
-        lens = [len(line) for line in lines]
+        return WorkspaceResponse(name=self._ws_name, len=len(repos), repos=repos)
 
-        return [
-            Container(name=name, type=type_, len=length)
-            for name, type_, length in zip(names, types, lens)
-        ]
+    def repo(self, path: RepoPathSpec) -> RepoResponse:
+        r = self._ws[path.repo]
+        names = r.get_line_names()
+        lines = [r[line] for line in names]
 
-    def model(self, ps: ModelPathSpec) -> Model:
-        line = self._ws[ps.repo][ps.line]
-        meta = line.load_model_meta(ps.num)
-        files = line.load_artifact_paths(ps.num)
+        line_rows = []
+        for name, line in zip(names, lines):
+            t = CLS2TYPE[type(line)]
+            meta = line.load_meta()
+            row = LineRow(
+                name=name,
+                len=len(line),
+                type=t,
+                created_at=meta[0]["created_at"],
+                updated_at=meta[0]["updated_at"],
+            )
+            line_rows.append(row)
 
-        return Model(
+        return RepoResponse(name=path.repo, len=len(lines), lines=line_rows)
+
+    def line(self, path: LinePathSpec) -> LineResponse:
+        line = self._ws[path.repo][path.line]
+
+        models = []
+        model_names = line.get_model_names()
+        for i, name in enumerate(model_names):
+            meta = line.load_model_meta(i)
+            model = ModelRow(
+                name=name,
+                slug=meta[0]["slug"],
+                created_at=meta[0]["created_at"],
+                saved_at=meta[0]["saved_at"],
+            )
+            models.append(model)
+        return LineResponse(name=path.line, len=len(line), models=models)
+
+    def model(self, path: ModelPathSpec) -> ModelResponse:
+        line = self._ws[path.repo][path.line]
+        meta = line.load_model_meta(path.num)
+        files = line.load_artifact_paths(path.num)
+
+        return ModelResponse(
             slug=meta[0]["slug"],
             path=meta[0]["path"],
             created_at=meta[0]["created_at"],
             saved_at=meta[0]["saved_at"],
             user=meta[0]["user"],
             host=meta[0]["host"],
+            cwd=meta[0]["cwd"],
             python_version=meta[0]["python_version"],
             description=meta[0]["description"],
             comments=meta[0]["comments"],
@@ -138,6 +215,25 @@ class Server:
             git_uncommitted_changes=(
                 meta[0]["git_uncommitted_changes"] if "git_uncommitted_changes" in meta[0] else None
             ),
+        )
+
+    def dataset(self, path: DatasetPathSpec) -> DatasetResponse:
+        line = self._ws[path.repo].add_line(path.line, line_type="data")
+        meta = line.load_obj_meta(path.ver)
+
+        return DatasetResponse(
+            name=path.ver,
+            path=meta[0]["path"],
+            saved_at=meta[0]["saved_at"],
+            user=meta[0]["user"],
+            host=meta[0]["host"],
+            cwd=meta[0]["cwd"],
+            python_version=meta[0]["python_version"],
+            description=meta[0]["description"],
+            comments=meta[0]["comments"],
+            tags=meta[0]["tags"],
+            git_commit=meta[0]["git_commit"],
+            git_uncommitted_changes=meta[0]["git_uncommitted_changes"],
         )
 
 
@@ -159,9 +255,11 @@ if __name__ == "__main__":
     module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     app = FastAPI(title="CascadeUI Backend")
-    app.add_api_route("/v1/repos", server.repos, methods=["post"])
-    app.add_api_route("/v1/lines", server.lines, methods=["post"])
+    app.add_api_route("/v1/workspace", server.workspace, methods=["post"])
+    app.add_api_route("/v1/repo", server.repo, methods=["post"])
+    app.add_api_route("/v1/line", server.line, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
+    app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
     app.mount(
         "/",
         StaticFiles(
