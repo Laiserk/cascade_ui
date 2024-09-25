@@ -25,9 +25,20 @@ class Workspace {
   }
 }
 
+/*fetch('http://localhost:8000/v1/workspace', {
+  method: "post",
+  headers: {
+    "Content-Type": "application/json"
+  }
+})
+    .then(function (response) {
+      console.log(response);
+    })
+    .catch(function (error) {
+      console.log(error);
+    })*/
 axios.post('http://localhost:8000/v1/workspace',
     {
-      mode: 'no-cors',
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
@@ -40,7 +51,7 @@ axios.post('http://localhost:8000/v1/workspace',
       console.log(error);
     });
 
-axios.post('http://localhost:8000/v1/repo',
+/*axios.post('http://localhost:8000/v1/repo',
     {
       repo: 'repo_1'
     })
@@ -49,7 +60,7 @@ axios.post('http://localhost:8000/v1/repo',
     })
     .catch(function (error) {
       console.log(error);
-    });
+    });*/
 
 </script>
 
