@@ -28,11 +28,11 @@ from cascade.workspaces import Workspace
 from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
-
 
 class Container(pydantic.BaseModel):
     name: str
@@ -255,6 +255,19 @@ if __name__ == "__main__":
     module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     app = FastAPI(title="CascadeUI Backend")
+
+    origins = [
+        "http://localhost:5173/"
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     app.add_api_route("/v1/workspace", server.workspace, methods=["post"])
     app.add_api_route("/v1/repo", server.repo, methods=["post"])
     app.add_api_route("/v1/line", server.line, methods=["post"])
