@@ -257,7 +257,7 @@ if __name__ == "__main__":
     app = FastAPI(title="CascadeUI Backend")
 
     origins = [
-        "http://localhost:5173/"
+        "http://localhost:5173"
     ]
 
     app.add_middleware(
