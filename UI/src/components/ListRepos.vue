@@ -1,26 +1,5 @@
 <script async lang="ts" setup>
-
-class Repo {
-  name: string | null;
-  len: number | null;
-
-  constructor(repo: Repo) {
-    this.name = repo.name;
-    this.len = repo.len;
-  }
-}
-
-class Workspace {
-  name: string | null;
-  len: number | null;
-  repos: Repo[] | null
-
-  constructor(workspace: Workspace) {
-    this.name = workspace.name;
-    this.len = workspace.len;
-    this.repos = workspace.repos === null ? null : workspace.repos.map((item: Repo) => new Repo(item));
-  }
-}
+import type {Workspace} from "@/models/Workspace";
 
 async function GetWorkspace(): Workspace {
   return fetch('http://localhost:8000/v1/workspace', {

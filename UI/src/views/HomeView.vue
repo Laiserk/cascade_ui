@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import ListRepos from "@/components/ListRepos.vue";
+import GetWorkspace from "@/components/GetWorkspace.vue";
 </script>
 
 <template>
@@ -17,6 +18,14 @@ import ListRepos from "@/components/ListRepos.vue";
   <body>
   <NavBar/>
   <div class="content">
+    <Suspense>
+      <GetWorkspace/>
+      <template #fallback>
+        <div class="welcome" style="align-content: center">
+          Loading...
+        </div>
+      </template>
+    </Suspense>
     <v-breadcrumbs :items="['Workspace', 'Workspace1']"></v-breadcrumbs>
     <div class="welcome">
       Welcome to Cascade!
