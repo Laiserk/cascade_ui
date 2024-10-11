@@ -1,42 +1,15 @@
-<script async lang="ts" setup>
+<script async lang="ts">
+import {Workspace} from "@/models/Workspace";
+import {defineComponent} from "vue";
 
-class Repo {
-  name: string | null;
-  len: number | null;
-
-  constructor(repo: Repo) {
-    this.name = repo.name;
-    this.len = repo.len;
-  }
-}
-
-class Workspace {
-  name: string | null;
-  len: number | null;
-  repos: Repo[] | null
-
-  constructor(workspace: Workspace) {
-    this.name = workspace.name;
-    this.len = workspace.len;
-    this.repos = workspace.repos === null ? null : workspace.repos.map((item: Repo) => new Repo(item));
-  }
-}
-
-async function GetWorkspace(): Workspace {
-  return fetch('http://localhost:8000/v1/workspace', {
-    method: "post",
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      "Content-Type": "application/json"
+export default defineComponent({
+  props: {
+    workspace: {
+      required: true,
+      type: Workspace
     }
-  })
-      .then(res => res.json())
-      .catch(function (error) {
-        console.log(error);
-      });
-}
-
-const workspace = await GetWorkspace();
+  }
+})
 
 </script>
 
