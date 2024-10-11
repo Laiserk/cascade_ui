@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="ts">
 import type {Workspace} from "@/models/Workspace";
 
 async function GetWorkspace(): Promise<Workspace> {
@@ -15,7 +15,12 @@ async function GetWorkspace(): Promise<Workspace> {
       });
 }
 
-const workspace = await GetWorkspace();
+const workspace: Workspace = await GetWorkspace();
+export default {
+  setup() {
+    return workspace;
+  }
+}
 </script>
 <template>
 

@@ -1,21 +1,15 @@
-<script async lang="ts" setup>
-import type {Workspace} from "@/models/Workspace";
+<script async lang="ts">
+import {Workspace} from "@/models/Workspace";
+import {defineComponent} from "vue";
 
-async function GetWorkspace(): Promise<Workspace> {
-  return fetch('http://localhost:8000/v1/workspace', {
-    method: "post",
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      "Content-Type": "application/json"
+export default defineComponent({
+  props: {
+    workspace: {
+      required: true,
+      type: Workspace
     }
-  })
-      .then(res => res.json())
-      .catch(function (error) {
-        console.log(error);
-      });
-}
-
-const workspace = await GetWorkspace();
+  }
+})
 
 </script>
 

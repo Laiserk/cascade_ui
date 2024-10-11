@@ -2,6 +2,11 @@
 import NavBar from "../components/NavBar.vue";
 import ListRepos from "@/components/ListRepos.vue";
 import GetWorkspace from "@/components/GetWorkspace.vue";
+import type {Workspace} from "@/models/Workspace";
+
+const workspace: Workspace = GetWorkspace.setup();
+const breadcrumbs: string[] = workspace.name?.split('\\');
+
 </script>
 
 <template>
@@ -26,12 +31,12 @@ import GetWorkspace from "@/components/GetWorkspace.vue";
         </div>
       </template>
     </Suspense>
-    <v-breadcrumbs :items="['Workspace', 'Workspace1']"></v-breadcrumbs>
+    <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
     <div class="welcome">
       Welcome to Cascade!
     </div>
     <Suspense>
-      <ListRepos/>
+      <ListRepos :workspace="workspace"/>
       <template #fallback>
         Loading...
       </template>
