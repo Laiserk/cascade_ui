@@ -25,7 +25,7 @@ venv\scripts\activate
 Windows
 
 ```bash
-python3 ../cascade_ui/server.py
+python ../cascade_ui/server.py
 ```
 
 Linux

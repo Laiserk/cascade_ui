@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
+import ListRepos from "@/components/ListRepos.vue";
 </script>
 
 <template>
@@ -20,36 +21,12 @@ import NavBar from "../components/NavBar.vue";
     <div class="welcome">
       Welcome to Cascade!
     </div>
-
-    <div class="listItem">
-      <v-card>
-        <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
-          repos/repo1
-        </v-card-title>
-        <v-card-subtitle style="font-family: Roboto,serif; font-size: 14px;">
-          6 lines
-        </v-card-subtitle>
-        <v-card-actions>
-          <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </div>
-    <div class="listItem">
-      <v-card>
-        <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
-          repos/repo1
-        </v-card-title>
-        <v-card-subtitle style="font-family: Roboto,serif; font-size: 14px;">
-          6 lines
-        </v-card-subtitle>
-        <v-card-actions>
-          <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </div>
-
+    <Suspense>
+      <ListRepos/>
+      <template #fallback>
+        Loading...
+      </template>
+    </Suspense>
   </div>
   </body>
 </template>
@@ -60,14 +37,7 @@ import NavBar from "../components/NavBar.vue";
   margin-left: 60px;
 }
 
-.listItem {
-  width: 580px;
-  margin-top: 26px;
-  box-shadow: 0 4px 4px 0 #00000040;
-}
-
 .welcome {
-
   font-family: 'Montserrat', serif;
   font-style: normal;
   font-weight: 700;
