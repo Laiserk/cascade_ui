@@ -1,67 +1,6 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import axios from "axios";
-
-
-class Repo {
-  name: string | null;
-  len: number | null;
-
-  constructor(name: string, len: number) {
-    this.name = name;
-    this.len = len;
-  }
-}
-
-class Workspace {
-  name: string | null;
-  len: number | null;
-  repos: Repo[] | null
-
-  constructor(name: string, len: number, repos: Repo[]) {
-    this.name = name;
-    this.len = len;
-    this.repos = repos;
-  }
-}
-
-/*fetch('http://localhost:8000/v1/workspace', {
-  method: "post",
-  headers: {
-    "Content-Type": "application/json"
-  }
-})
-    .then(function (response) {
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log(error);
-    })*/
-axios.post('http://localhost:8000/v1/workspace',
-    {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-    })
-    .then(function (response) {
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log(error);
-    });
-
-/*axios.post('http://localhost:8000/v1/repo',
-    {
-      repo: 'repo_1'
-    })
-    .then(function (response) {
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log(error);
-    });*/
-
+import ListRepos from "@/components/ListRepos.vue";
 </script>
 
 <template>
@@ -81,25 +20,13 @@ axios.post('http://localhost:8000/v1/workspace',
     <v-breadcrumbs :items="['Workspace', 'Workspace1']"></v-breadcrumbs>
     <div class="welcome">
       Welcome to Cascade!
-      <!--      {{ data }}-->
     </div>
-    <!--    <div v-for="item in data">
-          <div class="listItem">
-            <v-card>
-              <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
-                {{ item.name }}
-              </v-card-title>
-              <v-card-subtitle style="font-family: Roboto,serif; font-size: 14px;">
-                {{ item.len }} lines
-              </v-card-subtitle>
-              <v-card-actions>
-                <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </div>
-        </div>-->
-
+    <Suspense>
+      <ListRepos/>
+      <template #fallback>
+        Loading...
+      </template>
+    </Suspense>
   </div>
   </body>
 </template>
@@ -110,14 +37,7 @@ axios.post('http://localhost:8000/v1/workspace',
   margin-left: 60px;
 }
 
-.listItem {
-  width: 580px;
-  margin-top: 26px;
-  box-shadow: 0 4px 4px 0 #00000040;
-}
-
 .welcome {
-
   font-family: 'Montserrat', serif;
   font-style: normal;
   font-weight: 700;
