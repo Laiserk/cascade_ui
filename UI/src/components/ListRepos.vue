@@ -11,6 +11,11 @@ export default defineComponent({
   }
 })
 
+function OpenRepo(repoName: string) {
+  this.$router.push({name: 'repos/{repoName}'});
+}
+
+
 </script>
 
 <template>
