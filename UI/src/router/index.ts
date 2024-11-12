@@ -1,5 +1,5 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import WorkspaceView from '../views/WorkspaceView.vue'
 import ReposeView from '../views/ReposeView.vue'
 
 const router = createRouter({
@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'main',
-      component: HomeView
+      component: WorkspaceView
     },
     {
       path: '/repos',
@@ -18,7 +18,7 @@ const router = createRouter({
     {
       path: '/data_base',
       name: 'data_base',
-      component: HomeView
+      component: WorkspaceView
     }
   ]
 })
