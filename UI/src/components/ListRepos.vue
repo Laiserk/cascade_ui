@@ -1,25 +1,17 @@
-<script async lang="ts">
-import {Workspace} from "@/models/Workspace";
-import {defineComponent} from "vue";
+<script setup lang="ts">
+import { Workspace } from "@/models/Workspace";
+import { useRouter } from "vue-router";
 
-export default defineComponent({
-  props: {
-    workspace: {
-      required: true,
-      type: Workspace
-    }
-  }
-})
+const props = defineProps<{ workspace: Workspace }>();
+const router = useRouter();
 
-function OpenRepo(repoName: string) {
-  this.$router.push({name: 'repos/{repoName}'});
+function openRepo(repoName: string) {
+  router.push({ name: "repos", params: { repoName } });
 }
-
-
 </script>
 
 <template>
-  <div v-for="item in workspace.repos">
+  <div v-for="item in props.workspace.repos" :key="item.name">
     <div class="listItem">
       <v-card>
         <v-card-title style="font-family: Roboto,serif; font-size: 20px;">
@@ -29,7 +21,11 @@ function OpenRepo(repoName: string) {
           {{ item.len }} lines
         </v-card-subtitle>
         <v-card-actions>
-          <v-btn style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;" text="OPEN">
+          <v-btn
+            style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;"
+            text="OPEN"
+            <!-- @click="openRepo(item.name)" -->
+          >
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -38,7 +34,6 @@ function OpenRepo(repoName: string) {
 </template>
 
 <style scoped>
-
 .listItem {
   width: 580px;
   margin-top: 26px;
