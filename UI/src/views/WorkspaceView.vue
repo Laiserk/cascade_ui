@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import ListRepos from "@/components/ListRepos.vue";
-import GetWorkspace from "@/components/GetWorkspace.vue";
+import GetWorkspace from "@/components/GetWorkspace";
+import { ref, onMounted, computed } from "vue";
 import type {Workspace} from "@/models/Workspace";
+import { Workspace as WorkspaceClass } from "@/models/Workspace"; // import the class
 
-const workspace: Workspace = GetWorkspace.setup();
-const breadcrumbs: string[] = workspace.name?.split('\\');
+const workspace = ref<Workspace | null>(null);
 
+onMounted(async () => {
+  const wsObj = await GetWorkspace();
+  workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
+});
+
+const breadcrumbs = computed(() => workspace.value?.name?.split('\\') ?? []);
 </script>
 
 <template>
@@ -24,7 +31,6 @@ const breadcrumbs: string[] = workspace.name?.split('\\');
   <NavBar/>
   <div class="content">
     <Suspense>
-      <GetWorkspace/>
       <template #fallback>
         <div class="welcome" style="align-content: center">
           Loading...
@@ -36,7 +42,7 @@ const breadcrumbs: string[] = workspace.name?.split('\\');
       Welcome to Cascade!
     </div>
     <Suspense>
-      <ListRepos :workspace="workspace"/>
+      <ListRepos v-if="workspace" :workspace="workspace"/>
       <template #fallback>
         Loading...
       </template>
@@ -44,7 +50,6 @@ const breadcrumbs: string[] = workspace.name?.split('\\');
   </div>
   </body>
 </template>
-
 
 <style>
 .content {
