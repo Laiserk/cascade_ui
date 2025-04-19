@@ -26,13 +26,13 @@ from cascade.base import MetaHandler, supported_meta_formats
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 from fastapi import FastAPI
-from fastapi.routing import APIRouter
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
+
 
 class Container(pydantic.BaseModel):
     name: str
@@ -256,13 +256,9 @@ if __name__ == "__main__":
 
     app = FastAPI(title="CascadeUI Backend")
 
-    origins = [
-        "http://localhost:5173"
-    ]
-
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
