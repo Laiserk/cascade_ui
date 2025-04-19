@@ -1,6 +1,6 @@
 export class Repo {
-    name: string | null;
-    len: number | null;
+    name: string;
+    len: number;
 
     constructor(repo: Repo) {
         this.name = repo.name;
