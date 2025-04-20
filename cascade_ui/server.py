@@ -18,7 +18,7 @@ import glob
 import logging
 import os
 from argparse import ArgumentParser
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, SupportsFloat, Tuple, Union
 
 import pydantic
 import uvicorn
@@ -79,6 +79,24 @@ class ModelPathSpec(pydantic.BaseModel):
     num: int
 
 
+class Comment(pydantic.BaseModel):
+    id: str
+    user: str
+    host: str
+    timestamp: str
+    message: str
+
+
+class Metric(pydantic.BaseModel):
+    name: str
+    value: Optional[float] = None
+    dataset: Optional[str] = None
+    split: Optional[str] = None
+    direction: Optional[Literal["up", "down"]] = None
+    interval: Optional[Tuple[float, float]] = None
+    extra: Optional[Dict[str, Any]] = None
+
+
 class ModelResponse(pydantic.BaseModel):
     slug: str
     path: str
@@ -89,10 +107,10 @@ class ModelResponse(pydantic.BaseModel):
     cwd: str
     python_version: str
     description: Union[str, None]
-    comments: List[Dict[Any, Any]]
-    tags: Union[str, List[str]]
+    comments: List[Comment]
+    tags: List[str]
     params: Dict[str, Any]
-    metrics: List[Dict[str, Any]]
+    metrics: List[Metric]
     artifacts: List[str]
     files: List[str]
     git_commit: Optional[str] = None
