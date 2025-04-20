@@ -26,14 +26,17 @@ onMounted(async () => {
   }
 });
 
-const workspaceName = computed(() => workspace.value?.name ?? '');
+const breadcrumbs = computed(() => {
+  if (!workspace.value?.name) return [];
+  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value);
+});
 
 // Table headers for lines
 const lineHeaders = [
   { title: 'Name', value: 'name' },
   { title: 'Type', value: 'type' },
-  { title: 'Created At', value: 'created_at' },
-  { title: 'Updated At', value: 'updated_at' },
+  { title: 'Created', value: 'created_at' },
+  { title: 'Updated', value: 'updated_at' },
   { title: 'Len', value: 'len' },
 ];
 
@@ -43,10 +46,7 @@ const lineHeaders = [
   <div>
     <NavBar/>
     <div>
-      <p>Route param repoName: {{ repoName }}</p>
-      <p>Workspace: {{ workspaceName }}</p>
-      <p v-if="repo">Repo: {{ repo.name }} ({{ repo.len }} lines)</p>
-      <p v-else>Loading repo...</p>
+      <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
     </div>
     <div v-if="repo && repo.lines">
       <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">

@@ -13,7 +13,11 @@ onMounted(async () => {
   workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
 });
 
-const breadcrumbs = computed(() => workspace.value?.name?.split('\\') ?? []);
+const breadcrumbs = computed(() => {
+  if (!workspace.value?.name) return [];
+  // Split on both forward and backward slashes for cross-platform compatibility
+  return workspace.value.name.split(/[/\\]/).filter(Boolean);
+});
 </script>
 
 <template>
