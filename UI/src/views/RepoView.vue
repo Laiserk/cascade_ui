@@ -28,6 +28,15 @@ onMounted(async () => {
 
 const workspaceName = computed(() => workspace.value?.name ?? '');
 
+// Table headers for lines
+const lineHeaders = [
+  { title: 'Name', value: 'name' },
+  { title: 'Type', value: 'type' },
+  { title: 'Created At', value: 'created_at' },
+  { title: 'Updated At', value: 'updated_at' },
+  { title: 'Len', value: 'len' },
+];
+
 </script>
 
 <template>
@@ -38,6 +47,10 @@ const workspaceName = computed(() => workspace.value?.name ?? '');
       <p>Workspace: {{ workspaceName }}</p>
       <p v-if="repo">Repo: {{ repo.name }} ({{ repo.len }} lines)</p>
       <p v-else>Loading repo...</p>
+    </div>
+    <div v-if="repo && repo.lines">
+      <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">
+      </v-data-table>
     </div>
   </div>
 </template>
