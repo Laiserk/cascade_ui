@@ -4,7 +4,7 @@ import ListRepos from "@/components/ListRepos.vue";
 import GetWorkspace from "@/components/GetWorkspace";
 import { ref, onMounted, computed } from "vue";
 import type {Workspace} from "@/models/Workspace";
-import { Workspace as WorkspaceClass } from "@/models/Workspace"; // import the class
+import { Workspace as WorkspaceClass } from "@/models/Workspace";
 
 const workspace = ref<Workspace | null>(null);
 

@@ -6,7 +6,7 @@ const props = defineProps<{ workspace: Workspace }>();
 const router = useRouter();
 
 function openRepo(repoName: string) {
-  router.push({ name: "repos", params: { repoName } });
+  router.push({ name: "repo", params: { repoName } });
 }
 </script>
 
@@ -24,7 +24,7 @@ function openRepo(repoName: string) {
           <v-btn
             style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;"
             text="OPEN"
-            <!-- @click="openRepo(item.name)" -->
+            @click="openRepo(item.name)"
           >
           </v-btn>
         </v-card-actions>
