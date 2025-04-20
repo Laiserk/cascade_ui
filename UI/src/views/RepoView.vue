@@ -10,28 +10,34 @@ import { Workspace as WorkspaceClass } from "@/models/Workspace";
 
 import { useRoute } from 'vue-router'
 
-const route = useRoute()
-const repoName = route.params.repoName
+const workspace = ref<Workspace | null>(null);
 
-// onMounted(async () => {
-//     if (workspace.value != null) {
-//         const wsObj = await GetRepo(repoName);
-//         repo.value = wsObj ? new RepoClass(wsObj) : null;
-//     }
-// });
+const route = useRoute()
+const repoName = computed(() => route.params.repoName as string)
 
 const repo = ref<Repo | null>(null);
+
+onMounted(async () => {
+  const wsObj = await GetWorkspace();
+  workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
+  if (workspace.value && repoName.value) {
+    const repoObj = await GetRepo(repoName.value);
+    repo.value = new RepoClass(repoObj);
+  }
+});
+
+const workspaceName = computed(() => workspace.value?.name ?? '');
 
 </script>
 
 <template>
-    <head>
-      <meta charset="utf-8"/>
-      <title>repoName</title>
-      <p>route.params</p>
-      <!-- <link rel="stylesheet" href="src/assets/main.css"> -->
-    </head>
-    <body>
+  <div>
     <NavBar/>
-    </body>
-  </template>
+    <div>
+      <p>Route param repoName: {{ repoName }}</p>
+      <p>Workspace: {{ workspaceName }}</p>
+      <p v-if="repo">Repo: {{ repo.name }} ({{ repo.len }} lines)</p>
+      <p v-else>Loading repo...</p>
+    </div>
+  </div>
+</template>
