@@ -8,7 +8,7 @@ import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const workspace = ref<Workspace | null>(null);
 
@@ -16,6 +16,11 @@ const route = useRoute()
 const repoName = computed(() => route.params.repoName as string)
 
 const repo = ref<Repo | null>(null);
+const router = useRouter();
+
+function openLine(repoName: string, lineName: string) {
+  router.push({ name: "line", params: { repoName, lineName } });
+}
 
 onMounted(async () => {
   const wsObj = await GetWorkspace();
@@ -54,15 +59,21 @@ const lineHeaders = [
         href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
         rel="stylesheet">
   </head>
+
   <body>
     <div>
     <NavBar/>
     <div class="content">
       <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
-    </div>
-    <div v-if="repo && repo.lines">
-      <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">
-      </v-data-table>
+      <div v-if="repo && repo.lines">
+        <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">
+          <template #item.name="{ item }">
+            <v-btn variant="text" color="primary" @click="openLine(repoName, item.name)">
+              {{ item.name }}
+            </v-btn>
+          </template>
+        </v-data-table>
+      </div>
     </div>
   </div>
   </body>
@@ -71,5 +82,6 @@ const lineHeaders = [
 <style>
 .content {
   margin-left: 60px;
+  margin-right: 60px;
 }
 </style>

@@ -58,6 +58,7 @@ const breadcrumbs = computed(() => {
 <style>
 .content {
   margin-left: 60px;
+  margin-right: 60px;
 }
 
 .welcome {
