@@ -1,4 +1,16 @@
-import type {Model} from "@/models/Model";
+class ModelResponse {
+    name: string;
+    slug: string;
+    created_at: string;
+    saved_at: string;
+
+    constructor(model_response: ModelResponse) {
+        this.name = model_response.name;
+        this.slug = model_response.slug;
+        this.created_at = model_response.created_at;
+        this.saved_at = model_response.saved_at;
+    }
+}
 
 export class Line {
     name: string;
@@ -6,7 +18,7 @@ export class Line {
     type: string;
     created_at: string;
     updated_at: string;
-    models: Model[];
+    models: ModelResponse[];
 
     constructor(line: Line) {
         this.name = line.name;
