@@ -88,6 +88,96 @@ const breadcrumbs = computed(() => {
           <div style="margin-top: 20px">
             <p class="text"> {{ model?.description }}</p>
           </div>
+
+          <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
+          <v-table v-if="model">
+            <tbody>
+              <tr>
+                <td><b>Python version</b></td>
+                <td>{{ model.python_version }}</td>
+              </tr>
+              <tr>
+                <td><b>Git commit</b></td>
+                <td>{{ model.git_commit }}</td>
+              </tr>
+              <tr>
+                <td><b>Host</b></td>
+                <td>{{ model.user }}@{{ model.host }}</td>
+              </tr>
+              <tr>
+                <td><b>CWD</b></td>
+                <td>{{ model.cwd }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div v-if="model && (!model.python_version && !model.git_commit && !model.user && !model.host && !model.cwd)" style="height:24px"></div>
+
+          <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
+          <v-table v-if="model && model.params && Object.keys(model.params).length">
+            <tbody>
+              <tr v-for="(value, key) in model.params" :key="key">
+                <td><b>{{ key }}</b></td>
+                <td>{{ typeof value === 'object' ? JSON.stringify(value) : String(value) }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div v-else style="height:24px"></div>
+
+          <v-subheader style="margin-top: 32px;">METRICS</v-subheader>
+          <v-table v-if="model && model.metrics && model.metrics.length">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+                <th>Dataset</th>
+                <th>Split</th>
+                <th>Direction</th>
+                <th>Interval</th>
+                <th>Extra</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(metric, idx) in model.metrics" :key="idx">
+                <td>{{ metric.name }}</td>
+                <td>{{ metric.value }}</td>
+                <td>{{ metric.dataset }}</td>
+                <td>{{ metric.split }}</td>
+                <td>{{ metric.direction }}</td>
+                <td>
+                  <span v-if="metric.interval">
+                    [{{ metric.interval[0] }}, {{ metric.interval[1] }}]
+                  </span>
+                  <span v-else>-</span>
+                </td>
+                <td>
+                  <span v-if="metric.extra">{{ JSON.stringify(metric.extra) }}</span>
+                  <span v-else>-</span>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div v-else style="height:24px"></div>
+
+          <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
+          <v-table v-if="model && model.artifacts && model.artifacts.length">
+            <tbody>
+              <tr v-for="artifact in model.artifacts" :key="artifact">
+                <td>{{ artifact }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div v-else style="height:24px"></div>
+
+          <v-subheader style="margin-top: 32px;">FILES</v-subheader>
+          <v-table v-if="model && model.files && model.files.length">
+            <tbody>
+              <tr v-for="file in model.files" :key="file">
+                <td>{{ file }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div v-else style="height:24px"></div>
+
         </div>
       </div>
     </div>
