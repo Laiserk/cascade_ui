@@ -23,11 +23,12 @@ if __name__ == "__main__":
     repo = Repo(os.path.join(ws_path, "repo_1"))
     for i in range(5):
         line = repo.add_line(line_type="model")
-        model = BasicModel()
-        model.describe("Hello")
-        model.comment("This is a comment")
-        model.tag(["tag1"])
-        line.save(BasicModel(), only_meta=True)
+        for i in range(10):
+            model = BasicModel()
+            model.describe("Hello")
+            model.comment("This is a comment")
+            model.tag(["tag1"])
+            line.save(model, only_meta=True)
 
     repo = Repo(os.path.join(ws_path, "repo_2"))
     for i in range(5):
