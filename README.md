@@ -1,37 +1,22 @@
-# cascade_ui
-This is a web-based UI for Cascade - MLOps solution for individuals or small teams
+# Cascade UI
 
-## Developer setup
+Web-based UI for [Cascade](https://oxid15.github.io/cascade/en/latest/) - MLOps library for small teams and individuals.
 
-Go to the repo's root dir and install the package with
-```bash
-pip3 install -e .
-```
-*(You may want to create a venv for this)*
 
-Then create dummy workspace for tests
+## Installation
 
 ```bash
-python3 scripts/create_dummy_workspace.py
+pip install cascade-ui
 ```
 
-Run server inside this workspace
+## How to Use
+
+Navigate into a folder that is Cascade Workspace and run:
 
 ```bash
-cd dummy_workspace
-venv\scripts\activate
+cascade ui
 ```
 
-Windows
+## Docs
 
-```bash
-python ../cascade_ui/server.py
-```
-
-Linux
-```bash
-python3 ../cascade_ui/server.py
-```
-
-This will run a uvicorn server with
-Swagger docs at http://localhost:8000/docs
+[Go to Cascade documentation](https://oxid15.github.io/cascade/en/latest)
