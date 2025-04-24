@@ -17,8 +17,7 @@ limitations under the License.
 import glob
 import logging
 import os
-from argparse import ArgumentParser
-from typing import Any, Dict, List, Literal, Optional, SupportsFloat, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic
 import uvicorn
@@ -28,6 +27,8 @@ from cascade.workspaces import Workspace
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+from . import __version__
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -255,24 +256,18 @@ class Server:
         )
 
 
-if __name__ == "__main__":
+def run(path: str, host: str, port: int):
     logging.basicConfig(level="INFO")
     logger = logging.getLogger(__file__)
 
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--path", type=str, help="Path of the workspace where to start UI", default="."
-    )
-    args = parser.parse_args()
-
-    cwd = os.path.abspath(args.path)
+    cwd = os.path.abspath(path)
     logger.info(f"Starting in {cwd}")
 
     server = Server(cwd)
 
     module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    app = FastAPI(title="CascadeUI Backend")
+    app = FastAPI(title="CascadeUI Backend", version=__version__)
 
     app.add_middleware(
         CORSMiddleware,
@@ -296,4 +291,4 @@ if __name__ == "__main__":
         ),
         name="static",
     )
-    uvicorn.run(app)
+    uvicorn.run(app, host=host, port=port)
