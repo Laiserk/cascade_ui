@@ -17,8 +17,7 @@ limitations under the License.
 import glob
 import logging
 import os
-from argparse import ArgumentParser
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic
 import uvicorn
@@ -26,13 +25,15 @@ from cascade.base import MetaHandler, supported_meta_formats
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 from fastapi import FastAPI
-from fastapi.routing import APIRouter
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from . import __version__
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
+
 
 class Container(pydantic.BaseModel):
     name: str
@@ -79,6 +80,24 @@ class ModelPathSpec(pydantic.BaseModel):
     num: int
 
 
+class Comment(pydantic.BaseModel):
+    id: str
+    user: str
+    host: str
+    timestamp: str
+    message: str
+
+
+class Metric(pydantic.BaseModel):
+    name: str
+    value: Optional[float] = None
+    dataset: Optional[str] = None
+    split: Optional[str] = None
+    direction: Optional[Literal["up", "down"]] = None
+    interval: Optional[Tuple[float, float]] = None
+    extra: Optional[Dict[str, Any]] = None
+
+
 class ModelResponse(pydantic.BaseModel):
     slug: str
     path: str
@@ -89,10 +108,10 @@ class ModelResponse(pydantic.BaseModel):
     cwd: str
     python_version: str
     description: Union[str, None]
-    comments: List[Dict[Any, Any]]
-    tags: Union[str, List[str]]
+    comments: List[Comment]
+    tags: List[str]
     params: Dict[str, Any]
-    metrics: List[Dict[str, Any]]
+    metrics: List[Metric]
     artifacts: List[str]
     files: List[str]
     git_commit: Optional[str] = None
@@ -237,32 +256,22 @@ class Server:
         )
 
 
-if __name__ == "__main__":
+def run(path: str, host: str, port: int):
     logging.basicConfig(level="INFO")
     logger = logging.getLogger(__file__)
 
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--path", type=str, help="Path of the workspace where to start UI", default="."
-    )
-    args = parser.parse_args()
-
-    cwd = os.path.abspath(args.path)
+    cwd = os.path.abspath(path)
     logger.info(f"Starting in {cwd}")
 
     server = Server(cwd)
 
     module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    app = FastAPI(title="CascadeUI Backend")
-
-    origins = [
-        "http://localhost:5173"
-    ]
+    app = FastAPI(title="CascadeUI Backend", version=__version__)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -282,4 +291,4 @@ if __name__ == "__main__":
         ),
         name="static",
     )
-    uvicorn.run(app)
+    uvicorn.run(app, host=host, port=port)

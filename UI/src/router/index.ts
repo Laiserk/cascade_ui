@@ -1,6 +1,8 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import ReposeView from '../views/ReposeView.vue'
+import WorkspaceView from '../views/WorkspaceView.vue'
+import RepoView from '../views/RepoView.vue'
+import LineView from '../views/LineView.vue'
+import ModelView from '../views/ModelView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -8,18 +10,23 @@ const router = createRouter({
     {
       path: '/',
       name: 'main',
-      component: HomeView
+      component: WorkspaceView
     },
     {
-      path: '/repos',
-      name: 'repos',
-      component: ReposeView
+        path: '/repos/:repoName',
+        name: 'repo',
+        component: RepoView
     },
     {
-      path: '/data_base',
-      name: 'data_base',
-      component: HomeView
-    }
+      path: '/repos/:repoName/:lineName',
+      name: 'line',
+      component: LineView
+    },
+    {
+      path: '/repos/:repoName/:lineName/:modelNumString',
+      name: 'model',
+      component: ModelView
+    },
   ]
 })
 
