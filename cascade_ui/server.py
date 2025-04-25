@@ -265,7 +265,7 @@ def run(path: str, host: str, port: int):
 
     server = Server(cwd)
 
-    module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    package_dir = os.path.dirname(os.path.abspath(__file__))
 
     app = FastAPI(title="CascadeUI Backend", version=__version__)
 
@@ -285,7 +285,7 @@ def run(path: str, host: str, port: int):
     app.mount(
         "/",
         StaticFiles(
-            directory=os.path.join(module_dir, "UI", "dist"),
+            directory=os.path.join(package_dir, "web", "dist"),
             html=True,
             check_dir=True,
         ),

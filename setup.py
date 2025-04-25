@@ -1,3 +1,5 @@
+import os
+
 import setuptools
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -17,7 +19,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    package_dir={"cascade_ui": "./cascade_ui"},
+    package_dir={"cascade_ui": "cascade_ui"},
+    include_package_data=True,
+    package_data={"cascade_ui": ["web/dist/**"]},
     packages=setuptools.find_packages(),
     python_requires=">=3.8",
     install_requires=[
