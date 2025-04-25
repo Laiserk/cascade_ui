@@ -24,7 +24,7 @@ const breadcrumbs = computed(() => {
   <head>
     <meta charset="utf-8"/>
     <title>List of experiments</title>
-    <link rel="stylesheet" href="src/assets/main.css">
+    <link rel="stylesheet" href="/assets/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
           rel="stylesheet">
     <link

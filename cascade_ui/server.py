@@ -24,9 +24,11 @@ import uvicorn
 from cascade.base import MetaHandler, supported_meta_formats
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from . import __version__
 
@@ -282,13 +284,38 @@ def run(path: str, host: str, port: int):
     app.add_api_route("/v1/line", server.line, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
     app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
+
     app.mount(
-        "/",
+        "/assets",
         StaticFiles(
-            directory=os.path.join(package_dir, "web", "dist"),
-            html=True,
+            directory=os.path.join(package_dir, "web", "dist", "assets"),
+            html=False,
             check_dir=True,
         ),
-        name="static",
+        name="assets",
     )
+
+    app.mount(
+        "/favicon.ico",
+        StaticFiles(
+            directory=os.path.join(package_dir, "web", "dist"),
+            html=False,
+            check_dir=True,
+        ),
+        name="favicon",
+    )
+
+    @app.get("/{full_path:path}")
+    async def fallback(full_path: str, request: Request):
+        print("Requested", full_path)
+        if (
+            request.method == "GET"
+            and not full_path.startswith("v1/")
+            and not full_path.startswith("assets/")
+            and full_path != "favicon.ico"
+        ):
+            index_path = os.path.join(package_dir, "web", "dist", "index.html")
+            return FileResponse(index_path)
+        return Response(status_code=404)
+
     uvicorn.run(app, host=host, port=port)
