@@ -296,7 +296,7 @@ def run(path: str, host: str, port: int):
     )
 
     app.mount(
-        "/favicon.ico",
+        "/logo.svg",
         StaticFiles(
             directory=os.path.join(package_dir, "web", "dist"),
             html=False,
@@ -307,7 +307,6 @@ def run(path: str, host: str, port: int):
 
     @app.get("/{full_path:path}")
     async def fallback(full_path: str, request: Request):
-        print("Requested", full_path)
         if (
             request.method == "GET"
             and not full_path.startswith("v1/")
