@@ -1,6 +1,8 @@
 <template>
   <div class="headBar">
-    <img alt="" class="logo" src="../assets/logo.svg">
+    <router-link to="/">
+      <img alt="" class="logo" src="../assets/logo.svg">
+    </router-link>
     <a href="https://github.com/Oxid15/cascade">
       <div class="icon" style="margin-right: 10px">
         <IconGitHub/>
@@ -20,6 +22,7 @@
 }
 
 .logo {
+  margin-top: 5px;
   width: 60px;
   height: 60px;
 }
