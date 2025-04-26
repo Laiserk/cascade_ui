@@ -65,15 +65,15 @@ class LinePathSpec(pydantic.BaseModel):
     line: str
 
 
-class ModelRow(pydantic.BaseModel):
+class Item(pydantic.BaseModel):
     name: str
-    slug: str
-    created_at: str
+    slug: Optional[str] = None
+    created_at: Optional[str] = None
     saved_at: str
 
 
 class LineResponse(Container):
-    models: List[ModelRow]
+    items: List[Item]
 
 
 class ModelPathSpec(pydantic.BaseModel):
@@ -198,18 +198,18 @@ class Server:
     def line(self, path: LinePathSpec) -> LineResponse:
         line = self._ws[path.repo][path.line]
 
-        models = []
-        model_names = line.get_model_names()
-        for i, name in enumerate(model_names):
-            meta = line.load_model_meta(i)
-            model = ModelRow(
+        items = []
+        item_names = line.get_item_names()
+        for i, name in enumerate(item_names):
+            meta = line.load_obj_meta(i)
+            item = Item(
                 name=name,
-                slug=meta[0]["slug"],
-                created_at=meta[0]["created_at"],
+                slug=meta[0].get("slug"),
+                created_at=meta[0].get("created_at"),
                 saved_at=meta[0]["saved_at"],
             )
-            models.append(model)
-        return LineResponse(name=path.line, len=len(line), models=models)
+            items.append(item)
+        return LineResponse(name=path.line, len=len(line), items=items)
 
     def model(self, path: ModelPathSpec) -> ModelResponse:
         line = self._ws[path.repo][path.line]
