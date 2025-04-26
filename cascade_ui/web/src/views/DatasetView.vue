@@ -2,12 +2,12 @@
 import NavBar from "../components/NavBar.vue";
 import GetRepo from "@/components/GetRepo";
 import GetLine from "@/components/GetLine";
-import GetModel from "@/components/GetModel";
+import GetDataset from "@/components/GetDataset";
 import GetWorkspace from "@/components/GetWorkspace";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
-import {Model} from "@/models/Model";
-import {ModelLine} from "@/models/ModelLine";
+import {Dataset} from "@/models/Dataset";
+import {DataLine} from "@/models/DataLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
@@ -17,15 +17,14 @@ const route = useRoute()
 const router = useRouter()
 const repoName = computed(() => route.params.repoName as string)
 const lineName = computed(() => route.params.lineName as string)
-const modelNumString = computed(() => route.params.modelNumString as string)
-const modelNum = computed(() => Number(modelNumString.value));
+const datasetVer = computed(() => route.params.datasetVer as string)
 
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
-const line = ref<ModelLine | null>(null);
-const model = ref<Model | null>(null);
+const line = ref<DataLine | null>(null);
+const dataset = ref<Dataset | null>(null);
 
-async function loadModelData() {
+async function loadDatasetData() {
   const wsObj = await GetWorkspace();
   workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
   if (workspace.value && repoName.value) {
@@ -33,36 +32,36 @@ async function loadModelData() {
     repo.value = new RepoClass(repoObj);
     if (repo.value) {
       const lineObj = await GetLine(repoName.value, lineName.value);
-      line.value = new ModelLine(lineObj);
+      line.value = new DataLine(lineObj);
       if (line.value) {
-        const modelObj = await GetModel(repoName.value, lineName.value, modelNum.value);
-        model.value = new Model(modelObj);
+        const datasetObj = await GetDataset(repoName.value, lineName.value, datasetVer.value);
+        dataset.value = new Dataset(datasetObj);
       }
     }
   }
 }
 
-onMounted(loadModelData);
+onMounted(loadDatasetData);
 
 watch(
-  [repoName, lineName, modelNumString],
+  [repoName, lineName, datasetVer],
   () => {
-    loadModelData();
+    loadDatasetData();
   }
 );
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value).concat(modelNumString.value);
+  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value).concat(datasetVer.value);
 });
 
-function goToModel(modelNumString: string) {
+function goToDataset(datasetVer: string) {
   router.push({
-    name: "model",
+    name: "dataset",
     params: {
       repoName: repoName.value,
       lineName: lineName.value,
-      modelNumString: modelNumString
+      datasetVer: datasetVer
     }
   });
 }
@@ -86,26 +85,26 @@ function goToModel(modelNumString: string) {
       <div class="content">
         <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
         <div class="main-columns">
-          <div class="model-list-column">
-            <div class="model-list-header">Models</div>
-            <div v-if="line?.items && line.items.length" class="model-list">
+          <div class="dataset-list-column">
+            <div class="dataset-list-header">Datasets</div>
+            <div v-if="line?.items && line.items.length" class="dataset-list">
               <div
                 v-for="(m, idx) in line.items"
                 :key="idx"
-                class="model-list-item"
-                :class="{ active: m.name === modelNumString }"
-                @click="goToModel(m.name)"
+                class="dataset-list-item"
+                :class="{ active: m.name === datasetVer }"
+                @click="goToDataset(m.name)"
               >
                 {{ m.name }}
               </div>
             </div>
           </div>
-          <div class="model-info">
-            <p class="slug"> {{ model?.slug }}</p>
-            <p class="text"> {{ model?.path }}</p>
-            <div class="tags-row" v-if="model?.tags && model.tags.length">
+          <div class="dataset-info">
+            <p class="slug"> {{ dataset?.name }}</p>
+            <p class="text"> {{ dataset?.path }}</p>
+            <div class="tags-row" v-if="dataset?.tags && dataset.tags.length">
               <v-chip
-                v-for="tag in model.tags"
+                v-for="tag in dataset.tags"
                 :key="tag"
                 class="tag-chip"
                 :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
@@ -116,104 +115,37 @@ function goToModel(modelNumString: string) {
                 {{ tag }}
               </v-chip>
             </div>
-            <p class="text"> Created: {{ model?.created_at }}</p>
-            <p class="text"> Saved: {{ model?.saved_at }}</p>
+            <p class="text"> Saved: {{ dataset?.saved_at }}</p>
             <div style="margin-top: 20px">
-              <p class="text"> {{ model?.description }}</p>
+              <p class="text"> {{ dataset?.description }}</p>
             </div>
 
             <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
-            <v-table v-if="model">
+            <v-table v-if="dataset">
               <tbody>
                 <tr>
                   <td><b>Python version</b></td>
-                  <td>{{ model.python_version }}</td>
+                  <td>{{ dataset.python_version }}</td>
                 </tr>
                 <tr>
                   <td><b>Git commit</b></td>
-                  <td>{{ model.git_commit }}</td>
+                  <td>{{ dataset.git_commit }}</td>
                 </tr>
                 <tr>
                   <td><b>Host</b></td>
-                  <td>{{ model.user }}@{{ model.host }}</td>
+                  <td>{{ dataset.user }}@{{ dataset.host }}</td>
                 </tr>
                 <tr>
                   <td><b>CWD</b></td>
-                  <td>{{ model.cwd }}</td>
+                  <td>{{ dataset.cwd }}</td>
                 </tr>
               </tbody>
             </v-table>
-            <div v-if="model && (!model.python_version && !model.git_commit && !model.user && !model.host && !model.cwd)" style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
-            <v-table v-if="model && model.params && Object.keys(model.params).length">
-              <tbody>
-                <tr v-for="(value, key) in model.params" :key="key">
-                  <td><b>{{ key }}</b></td>
-                  <td>{{ typeof value === 'object' ? JSON.stringify(value) : String(value) }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
-
-            <v-subheader style="margin-top: 32px;">METRICS</v-subheader>
-            <v-table v-if="model && model.metrics && model.metrics.length">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Value</th>
-                  <th>Dataset</th>
-                  <th>Split</th>
-                  <th>Direction</th>
-                  <th>Interval</th>
-                  <th>Extra</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(metric, idx) in model.metrics" :key="idx">
-                  <td>{{ metric.name }}</td>
-                  <td>{{ metric.value }}</td>
-                  <td>{{ metric.dataset }}</td>
-                  <td>{{ metric.split }}</td>
-                  <td>{{ metric.direction }}</td>
-                  <td>
-                    <span v-if="metric.interval">
-                      [{{ metric.interval[0] }}, {{ metric.interval[1] }}]
-                    </span>
-                    <span v-else>-</span>
-                  </td>
-                  <td>
-                    <span v-if="metric.extra">{{ JSON.stringify(metric.extra) }}</span>
-                    <span v-else>-</span>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
-
-            <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
-            <v-table v-if="model && model.artifacts && model.artifacts.length">
-              <tbody>
-                <tr v-for="artifact in model.artifacts" :key="artifact">
-                  <td>{{ artifact }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
-
-            <v-subheader style="margin-top: 32px;">FILES</v-subheader>
-            <v-table v-if="model && model.files && model.files.length">
-              <tbody>
-                <tr v-for="file in model.files" :key="file">
-                  <td>{{ file }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
           </div>
           <div class="comments-section">
             <div
-              v-for="comment in model?.comments"
+              v-for="comment in dataset?.comments"
               :key="comment.id"
               class="comment-bubble"
             >
@@ -243,7 +175,7 @@ function goToModel(modelNumString: string) {
   align-items: flex-start;
   width: 100%;
 }
-.model-list-column {
+.dataset-list-column {
   width: 20%;
   min-width: 120px;
   margin-top: 20px;
@@ -252,19 +184,19 @@ function goToModel(modelNumString: string) {
   flex-direction: column;
   align-items: stretch;
 }
-.model-list-header {
+.dataset-list-header {
   font-family: Roboto;
   font-weight: bold;
   font-size: 18px;
   margin-bottom: 12px;
   color: #333;
 }
-.model-list {
+.dataset-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.model-list-item {
+.dataset-list-item {
   padding: 8px 12px;
   border-radius: 8px;
   background: #f9f9f9;
@@ -274,11 +206,11 @@ function goToModel(modelNumString: string) {
   color: #555;
   transition: background 0.2s, color 0.2s;
 }
-.model-list-item.active, .model-list-item:hover {
+.dataset-list-item.active, .dataset-list-item:hover {
   background: #084c61;
   color: #fff;
 }
-.model-info {
+.dataset-info {
   margin-top: 20px;
   width: 60%;
   margin-left: 0;

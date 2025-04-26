@@ -1,10 +1,8 @@
 import type {ItemComment} from "@/models/ItemComment";
-import type {Metric} from "@/models/Metric";
 
-export class Model {
-    slug: string;
+export class Dataset {
+    name: string;
     path: string;
-    created_at: string;
     saved_at: string;
     user: string;
     host: string;
@@ -13,17 +11,12 @@ export class Model {
     description: string;
     comments: ItemComment[];
     tags: string[];
-    params: object;
-    metrics: Metric[];
-    artifacts: string[];
-    files: string[];
     git_commit: string | null;
     git_uncommitted_changes: string[]
 
-    constructor(model: Model) {
-        this.slug = model.slug;
+    constructor(model: Dataset) {
+        this.name = model.name;
         this.path = model.path;
-        this.created_at = model.created_at;
         this.saved_at = model.saved_at;
         this.user = model.user;
         this.host = model.host;
@@ -32,10 +25,6 @@ export class Model {
         this.description = model.description;
         this.comments = model.comments;
         this.tags = model.tags;
-        this.params = model.params;
-        this.metrics = model.metrics;
-        this.artifacts = model.artifacts;
-        this.files = model.files;
         this.git_commit = model.git_commit;
         this.git_uncommitted_changes = model.git_uncommitted_changes;
     }

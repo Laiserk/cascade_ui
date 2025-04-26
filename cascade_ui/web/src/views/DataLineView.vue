@@ -1,33 +1,27 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import GetRepo from "@/components/GetRepo";
+import GetLine from "@/components/GetLine";
 import GetWorkspace from "@/components/GetWorkspace";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
+import {DataLine} from "@/models/DataLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
-
 import { useRouter, useRoute } from 'vue-router'
 
-const workspace = ref<Workspace | null>(null);
-
 const route = useRoute()
+const router = useRouter()
 const repoName = computed(() => route.params.repoName as string)
+const lineName = computed(() => route.params.lineName as string)
 
+const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
-const router = useRouter();
+const line = ref<DataLine | null>(null);
 
-function openLine(repoName: string, lineName: string, lineType: string) {
-  if (lineType === "model_line") {
-    router.push({ name: "model_line", params: { repoName, lineName } });
-  }
-  else if (lineType === "data_line") {
-    router.push({ name: "data_line", params: { repoName, lineName } });
-  }
-  else {
-    throw Error()
-  }
+function openDataset(repoName: string, lineName: string, datasetVer: string) {
+  router.push({ name: "dataset", params: { repoName, lineName, datasetVer } });
 }
 
 onMounted(async () => {
@@ -36,27 +30,27 @@ onMounted(async () => {
   if (workspace.value && repoName.value) {
     const repoObj = await GetRepo(repoName.value);
     repo.value = new RepoClass(repoObj);
+    if (repo.value) {
+      const lineObj = await GetLine(repoName.value, lineName.value);
+      line.value = new DataLine(lineObj);
+    }
   }
-});
+}
+);
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value);
+  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value);
 });
 
-// Table headers for lines
-const lineHeaders = [
+const dataHeaders = [
   { title: 'Name', value: 'name' },
-  { title: 'Type', value: 'type' },
-  { title: 'Created', value: 'created_at' },
-  { title: 'Updated', value: 'updated_at' },
-  { title: 'Len', value: 'len' },
+  { title: 'Saved', value: 'saved_at' },
 ];
 
 </script>
 
 <template>
-
   <head>
     <meta charset="utf-8"/>
     <title>List of experiments</title>
@@ -69,21 +63,21 @@ const lineHeaders = [
   </head>
 
   <body>
-    <div>
     <NavBar/>
-    <div class="content">
-      <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
-      <div v-if="repo && repo.lines">
-        <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">
-          <template #item.name="{ item }">
-            <v-btn variant="text" color="primary" @click="openLine(repoName, item.name, item.type)">
+    <div>
+      <div class="content">
+        <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
+        <div v-if="line && line.items">
+          <v-data-table :headers="dataHeaders" :items="line.items" class="mt-4">
+            <template #item.name="{ item }">
+            <v-btn variant="text" color="primary" @click="openDataset(repoName, lineName, item.name)">
               {{ item.name }}
             </v-btn>
           </template>
-        </v-data-table>
+          </v-data-table>
+        </div>
       </div>
     </div>
-  </div>
   </body>
 </template>
 

@@ -1,10 +1,10 @@
-class ModelResponse {
+export class Response {
     name: string;
     slug: string;
     created_at: string;
     saved_at: string;
 
-    constructor(model_response: ModelResponse) {
+    constructor(model_response: Response) {
         this.name = model_response.name;
         this.slug = model_response.slug;
         this.created_at = model_response.created_at;
@@ -18,7 +18,7 @@ export class Line {
     type: string;
     created_at: string;
     updated_at: string;
-    models: ModelResponse[];
+    items: Response[];
 
     constructor(line: Line) {
         this.name = line.name;
@@ -26,6 +26,6 @@ export class Line {
         this.type = line.type;
         this.created_at = line.created_at;
         this.updated_at = line.updated_at;
-        this.models = line.models;
+        this.items = line.items;
     }
 }

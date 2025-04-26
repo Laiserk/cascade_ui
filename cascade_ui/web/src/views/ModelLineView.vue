@@ -5,7 +5,7 @@ import GetLine from "@/components/GetLine";
 import GetWorkspace from "@/components/GetWorkspace";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
-import {Line} from "@/models/Line";
+import {ModelLine} from "@/models/ModelLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
@@ -18,7 +18,7 @@ const lineName = computed(() => route.params.lineName as string)
 
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
-const line = ref<Line | null>(null);
+const line = ref<ModelLine | null>(null);
 
 function openModel(repoName: string, lineName: string, modelNumString: string) {
   router.push({ name: "model", params: { repoName, lineName, modelNumString } });
@@ -32,7 +32,7 @@ onMounted(async () => {
     repo.value = new RepoClass(repoObj);
     if (repo.value) {
       const lineObj = await GetLine(repoName.value, lineName.value);
-      line.value = new Line(lineObj);
+      line.value = new ModelLine(lineObj);
     }
   }
 }
@@ -69,8 +69,8 @@ const modelHeaders = [
     <div>
       <div class="content">
         <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
-        <div v-if="line && line.models">
-          <v-data-table :headers="modelHeaders" :items="line.models" class="mt-4">
+        <div v-if="line && line.items">
+          <v-data-table :headers="modelHeaders" :items="line.items" class="mt-4">
             <template #item.name="{ item }">
             <v-btn variant="text" color="primary" @click="openModel(repoName, lineName, item.name)">
               {{ item.name }}
