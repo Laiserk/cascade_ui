@@ -109,8 +109,8 @@ function goToModel(modelNumString: string) {
                 :key="tag"
                 class="tag-chip"
                 :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
-                color="#898989"
-                text-color="#000000"
+                background="#D9D7DD"
+                text-color="#555"
                 outlined
               >
                 {{ tag }}
@@ -118,7 +118,7 @@ function goToModel(modelNumString: string) {
             </div>
             <p class="text"> Created: {{ model?.created_at }}</p>
             <p class="text"> Saved: {{ model?.saved_at }}</p>
-            <div style="margin-top: 20px">
+            <div style="margin-top: 20px;margin-bottom: 20px">
               <p class="text"> {{ model?.description }}</p>
             </div>
 
@@ -275,8 +275,8 @@ function goToModel(modelNumString: string) {
   transition: background 0.2s, color 0.2s;
 }
 .model-list-item.active, .model-list-item:hover {
-  background: #084c61;
-  color: #fff;
+  background: #D9D7DD;
+  color: #555;
 }
 .model-info {
   margin-top: 20px;

@@ -22,7 +22,7 @@ function openRepo(repoName: string) {
         </v-card-subtitle>
         <v-card-actions>
           <v-btn
-            style="font-family: Roboto,serif; font-size: 14px; color: #1976D2;"
+            style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;"
             text="OPEN"
             @click="openRepo(item.name)"
           >

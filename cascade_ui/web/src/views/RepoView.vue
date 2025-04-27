@@ -76,7 +76,7 @@ const lineHeaders = [
       <div v-if="repo && repo.lines">
         <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">
           <template #item.name="{ item }">
-            <v-btn variant="text" color="primary" @click="openLine(repoName, item.name, item.type)">
+            <v-btn variant="text" style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;" @click="openLine(repoName, item.name, item.type)">
               {{ item.name }}
             </v-btn>
           </template>

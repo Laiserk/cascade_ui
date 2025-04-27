@@ -108,8 +108,8 @@ function goToDataset(datasetVer: string) {
                 :key="tag"
                 class="tag-chip"
                 :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
-                color="#898989"
-                text-color="#000000"
+                background="#D9D7DD"
+                text-color="#555"
                 outlined
               >
                 {{ tag }}
@@ -207,8 +207,8 @@ function goToDataset(datasetVer: string) {
   transition: background 0.2s, color 0.2s;
 }
 .dataset-list-item.active, .dataset-list-item:hover {
-  background: #084c61;
-  color: #fff;
+  background: #D9D7DD;
+  color: #555;
 }
 .dataset-info {
   margin-top: 20px;

@@ -72,7 +72,7 @@ const modelHeaders = [
         <div v-if="line && line.items">
           <v-data-table :headers="modelHeaders" :items="line.items" class="mt-4">
             <template #item.name="{ item }">
-            <v-btn variant="text" color="primary" @click="openModel(repoName, lineName, item.name)">
+            <v-btn variant="text" style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;" @click="openModel(repoName, lineName, item.name)">
               {{ item.name }}
             </v-btn>
           </template>
