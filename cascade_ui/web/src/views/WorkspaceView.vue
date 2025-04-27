@@ -2,15 +2,23 @@
 import NavBar from "../components/NavBar.vue";
 import ListRepos from "@/components/ListRepos.vue";
 import GetWorkspace from "@/components/GetWorkspace";
+import GetVersionInfo from "@/components/GetVersionInfo"
 import { ref, onMounted, computed } from "vue";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 
 const workspace = ref<Workspace | null>(null);
+const cascadeMLVersion = ref<string | null>(null);
+const cascadeUIVersion = ref<string | null>(null);
 
 onMounted(async () => {
   const wsObj = await GetWorkspace();
   workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
+
+  const versionInfo = await GetVersionInfo();
+  console.log(versionInfo)
+  cascadeMLVersion.value = versionInfo?.cascade_ml_version
+  cascadeUIVersion.value = versionInfo?.cascade_ui_version
 });
 
 const breadcrumbs = computed(() => {
@@ -50,6 +58,9 @@ const breadcrumbs = computed(() => {
         Loading...
       </template>
     </Suspense>
+    <div class="version-info">
+      <p>Cascade version: {{ cascadeMLVersion }} • UI version: {{ cascadeUIVersion }}</p>
+    </div>
   </div>
   </body>
 </template>
@@ -67,6 +78,14 @@ const breadcrumbs = computed(() => {
   font-size: 40px;
   line-height: 49px;
   color: #084C61;
+}
+
+.version-info {
+  color: #b6b6b6;
+  margin-top: 300px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
 }
 
 </style>

@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic
 import uvicorn
+from cascade import __version__ as cascade_version
 from cascade.base import MetaHandler, supported_meta_formats
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
@@ -141,6 +142,11 @@ class DatasetResponse(pydantic.BaseModel):
     git_uncommitted_changes: Optional[List[str]] = None
 
 
+class VersionResponse(pydantic.BaseModel):
+    cascade_ml_version: str
+    cascade_ui_version: str
+
+
 class Server:
     def __init__(self, path: str) -> None:
         meta_paths = glob.glob(os.path.join(path, "meta.*"))
@@ -257,6 +263,12 @@ class Server:
             git_uncommitted_changes=meta[0]["git_uncommitted_changes"],
         )
 
+    def version(self):
+        return VersionResponse(
+            cascade_ml_version=cascade_version,
+            cascade_ui_version=__version__,
+        )
+
 
 def run(path: str, host: str, port: int):
     logging.basicConfig(level="INFO")
@@ -284,6 +296,7 @@ def run(path: str, host: str, port: int):
     app.add_api_route("/v1/line", server.line, methods=["post"])
     app.add_api_route("/v1/model", server.model, methods=["post"])
     app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
+    app.add_api_route("/v1/version", server.version, methods=["get"])
 
     app.mount(
         "/assets",
