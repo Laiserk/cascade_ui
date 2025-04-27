@@ -122,29 +122,6 @@ function goToModel(modelNumString: string) {
               <p class="text"> {{ model?.description }}</p>
             </div>
 
-            <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
-            <v-table v-if="model">
-              <tbody>
-                <tr>
-                  <td><b>Python version</b></td>
-                  <td>{{ model.python_version }}</td>
-                </tr>
-                <tr>
-                  <td><b>Git commit</b></td>
-                  <td>{{ model.git_commit }}</td>
-                </tr>
-                <tr>
-                  <td><b>Host</b></td>
-                  <td>{{ model.user }}@{{ model.host }}</td>
-                </tr>
-                <tr>
-                  <td><b>CWD</b></td>
-                  <td>{{ model.cwd }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-if="model && (!model.python_version && !model.git_commit && !model.user && !model.host && !model.cwd)" style="height:24px"></div>
-
             <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
             <v-table v-if="model && model.params && Object.keys(model.params).length">
               <tbody>
@@ -210,6 +187,31 @@ function goToModel(modelNumString: string) {
               </tbody>
             </v-table>
             <div v-else style="height:24px"></div>
+
+            <div v-if="model && (model.python_version && model.git_commit && model.user && model.host && model.cwd)" style="height:24px">
+              <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
+              <v-table v-if="model">
+                <tbody>
+                  <tr>
+                    <td><b>Python version</b></td>
+                    <td>{{ model.python_version }}</td>
+                  </tr>
+                  <tr>
+                    <td><b>Git commit</b></td>
+                    <td>{{ model.git_commit }}</td>
+                  </tr>
+                  <tr>
+                    <td><b>Host</b></td>
+                    <td>{{ model.user }}@{{ model.host }}</td>
+                  </tr>
+                  <tr>
+                    <td><b>CWD</b></td>
+                    <td>{{ model.cwd }}</td>
+                  </tr>
+                </tbody>
+              </v-table>
+            </div>
+
           </div>
           <div class="comments-section">
             <div
