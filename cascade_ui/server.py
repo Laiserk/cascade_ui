@@ -174,6 +174,7 @@ class Server:
         self._ws_name = self._ws.get_root()
 
     def workspace(self) -> WorkspaceResponse:
+        self._ws = Workspace(self._ws_name)
         repo_names = self._ws.get_repo_names()
         repo_lengths = [len(self._ws[name]) for name in repo_names]
 
