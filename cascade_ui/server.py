@@ -17,12 +17,13 @@ limitations under the License.
 import glob
 import logging
 import os
+import warnings
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic
 import uvicorn
 from cascade import __version__ as cascade_version
-from cascade.base import MetaHandler, supported_meta_formats
+from cascade.base import MetaHandler, ZeroMetaError, supported_meta_formats
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 from fastapi import FastAPI, Request
@@ -108,17 +109,17 @@ class ModelResponse(pydantic.BaseModel):
     saved_at: str
     user: str
     host: str
-    cwd: str
+    cwd: Optional[str]
     python_version: str
-    description: Union[str, None]
+    description: Optional[str]
     comments: List[Comment]
     tags: List[str]
     params: Dict[str, Any]
     metrics: List[Metric]
     artifacts: List[str]
     files: List[str]
-    git_commit: Optional[str] = None
-    git_uncommitted_changes: Optional[List[str]] = None
+    git_commit: Optional[str]
+    git_uncommitted_changes: Optional[List[str]]
 
 
 class DatasetPathSpec(pydantic.BaseModel):
@@ -191,12 +192,20 @@ class Server:
         for name, line in zip(names, lines):
             t = CLS2TYPE[type(line)]
             meta = line.load_meta()
+
+            created_at = meta[0].get("created_at")
+            updated_at = meta[0].get("updated_at")
+
+            if not created_at or not updated_at:
+                warnings.warn(f"No created_at or updated_at in line {name}")
+                continue
+
             row = LineRow(
                 name=name,
                 len=len(line),
                 type=t,
-                created_at=meta[0]["created_at"],
-                updated_at=meta[0]["updated_at"],
+                created_at=created_at,
+                updated_at=updated_at,
             )
             line_rows.append(row)
 
@@ -208,7 +217,10 @@ class Server:
         items = []
         item_names = line.get_item_names()
         for i, name in enumerate(item_names):
-            meta = line.load_obj_meta(i)
+            try:
+                meta = line.load_obj_meta(i)
+            except ZeroMetaError:
+                continue
             item = Item(
                 name=name,
                 slug=meta[0].get("slug"),
@@ -230,7 +242,7 @@ class Server:
             saved_at=meta[0]["saved_at"],
             user=meta[0]["user"],
             host=meta[0]["host"],
-            cwd=meta[0]["cwd"],
+            cwd=meta[0].get("cwd"),
             python_version=meta[0]["python_version"],
             description=meta[0]["description"],
             comments=meta[0]["comments"],
@@ -239,10 +251,8 @@ class Server:
             metrics=meta[0]["metrics"],
             artifacts=files["artifacts"],
             files=files["files"],
-            git_commit=meta[0]["git_commit"] if "git_commit" in meta[0] else None,
-            git_uncommitted_changes=(
-                meta[0]["git_uncommitted_changes"] if "git_uncommitted_changes" in meta[0] else None
-            ),
+            git_commit=meta[0].get("git_commit"),
+            git_uncommitted_changes=meta[0].get("git_uncommitted_changes"),
         )
 
     def dataset(self, path: DatasetPathSpec) -> DatasetResponse:

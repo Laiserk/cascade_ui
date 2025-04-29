@@ -157,5 +157,5 @@ cython_debug/
 
 
 # Custom
-dummy_workspace
+*_workspace
 .idea
