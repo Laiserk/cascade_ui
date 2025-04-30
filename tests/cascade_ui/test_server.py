@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Oleg Sevostyanov, Ilia Moiseev
+Copyright 2023-2025 Oleg Sevostyanov, Ilia Moiseev
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,46 +17,33 @@ limitations under the License.
 import os
 import sys
 
-import pytest
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
 sys.path.append(BASE_DIR)
-from cascade_ui.server import ModelPathSpec, Server
+from cascade_ui.server import LinePathSpec, ModelPathSpec, RepoPathSpec, Server
 
 
-@pytest.mark.asyncio
-async def test_repos(workspace):
+def test_repos(workspace):
     path = workspace.get_root()
 
     s = Server(path)
-    repos = await s.repos()
-    assert len(repos) == 1
-    assert repos[0].name == "repo"
+    repo = s.repo(RepoPathSpec(repo="repo"))
+    assert repo.name == "repo"
 
 
-@pytest.mark.asyncio
-async def test_lines(workspace):
+def test_lines(workspace):
     path = workspace.get_root()
 
     s = Server(path)
-    lines = await s.lines("repo")
-    assert len(lines) == 1
-    assert lines[0].name == "00000"
+    line = s.line(LinePathSpec(repo="repo", line="00000"))
+    assert line.len == 1
+    assert line.name == "00000"
 
 
-@pytest.mark.asyncio
-async def test_model(workspace):
+def test_model(workspace):
     path = workspace.get_root()
 
     s = Server(path)
-    model = await s.model(
-        ModelPathSpec(
-            repo="repo",
-            line="00000",
-            num=0
-        ))
-
-    # TODO: may check more
-    assert len(model.artifacts) == 1
+    model = s.model(ModelPathSpec(repo="repo", line="00000", num=0))
+    assert len(model.artifacts) == 0

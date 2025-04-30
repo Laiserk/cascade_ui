@@ -9,7 +9,7 @@ setuptools.setup(
     author="Oleg Sevostyanov,Ilia Moiseev",
     author_email="ilia.moiseev.5@yandex.ru",
     license="Apache License 2.0",
-    description="Web-UI for Cascade - ML Engineering Library",
+    description="Web-UI for Cascade - Lightweight and modular MLOps library targeted at small teams or individuals ",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/laiserk/cascade_ui",
