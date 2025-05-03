@@ -121,7 +121,7 @@ class Server:
         meta = meta[0]
         flat = flatten_dict(meta, separator=".", root_keys_to_ignore=("tags", "metrics"))
 
-        metrics = flat.pop("metrics")
+        metrics = flat.pop("metrics", [])
         for metric in metrics:
             name = metric["name"]
             for key in ["dataset", "split"]:
@@ -184,6 +184,7 @@ class Server:
         return LineResponse(
             name=path.line,
             len=len(line),
+            type=CLS2TYPE[type(line)],
             items=items,
             item_fields=list(item_fields),
         )

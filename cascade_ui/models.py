@@ -40,6 +40,7 @@ class Item(pydantic.BaseModel):
 
 
 class LineResponse(Container):
+    type: Literal["model_line", "data_line"]
     items: List[Item]
     item_fields: List[str]
 
