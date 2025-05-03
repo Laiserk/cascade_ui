@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Line } from "@/models/Line";
-import { ref, onMounted, computed } from "vue";
+import { ref, computed } from "vue";
 import { useRouter, useRoute } from 'vue-router'
 
 const props = defineProps<{ line: Line }>();
