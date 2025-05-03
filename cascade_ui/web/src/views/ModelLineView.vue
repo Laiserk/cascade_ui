@@ -21,9 +21,9 @@ const repo = ref<Repo | null>(null);
 const line = ref<ModelLine | null>(null);
 
 const selectedFields = ref<string[]>([]);
-const applyClicked = ref(false);
+const requestClicked = ref(false);
 
-const defaultFields = ['name', 'slug', 'created_at', 'saved_at'];
+const defaultFields = ['name', 'slug', 'tags', 'created_at', 'saved_at'];
 
 async function fetchLineItems() {
   if (!repoName.value || !lineName.value) return;
@@ -66,19 +66,20 @@ const fieldsOptions = computed(() => {
 
 const dynamicModelHeaders = computed(() => {
   const baseHeaders = [
-    { title: 'Name', value: 'name' },
-    { title: 'Slug', value: 'slug' },
-    { title: 'Created', value: 'created_at' },
-    { title: 'Saved', value: 'saved_at' },
+    { title: 'name', value: 'name' },
+    { title: 'slug', value: 'slug' },
+    { title: 'tags', value: 'tags' },
+    { title: 'created', value: 'created_at' },
+    { title: 'saved', value: 'saved_at' },
   ];
   const selected = selectedFields.value
     .filter(f => !baseHeaders.some(h => h.value === f))
-    .map(f => ({ title: f.charAt(0).toUpperCase() + f.slice(1), value: f }));
+    .map(f => ({ title: f, value: f }));
   return baseHeaders.concat(selected);
 });
 
 function applyFields() {
-  applyClicked.value = true;
+  requestClicked.value = true;
   fetchLineItems();
 }
 

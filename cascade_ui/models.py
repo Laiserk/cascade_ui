@@ -33,6 +33,7 @@ class LinePathSpec(pydantic.BaseModel):
 
 class Item(pydantic.BaseModel):
     name: str
+    tags: List[str]
     slug: Optional[str] = None
     created_at: Optional[str] = None
     saved_at: str

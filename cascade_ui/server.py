@@ -135,7 +135,7 @@ class Server:
         def keys_filter(key: str) -> bool:
             if key.startswith(("comments", "git_uncommitted_changes", "links")):
                 return False
-            if key in ("name", "slug", "saved_at", "created_at"):
+            if key in ("name", "slug", "tags", "saved_at", "created_at"):
                 return False
             return True
 
@@ -176,6 +176,7 @@ class Server:
             item = Item(
                 name=name,
                 slug=meta[0].get("slug"),
+                tags=meta[0].get("tags"),
                 created_at=meta[0].get("created_at"),
                 saved_at=meta[0]["saved_at"],
             )
