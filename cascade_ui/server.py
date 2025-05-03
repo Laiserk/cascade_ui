@@ -121,11 +121,23 @@ class Server:
         meta = meta[0]
         flat = flatten_dict(meta, separator=".", root_keys_to_ignore=("tags", "metrics"))
 
+        metrics = flat.pop("metrics")
+        for metric in metrics:
+            name = metric["name"]
+            for key in ["dataset", "split"]:
+                part = metric.get(key)
+                name += "_" + part if part else ""
+            flat[f"metrics.{name}"] = metric["value"]
+
         return flat
 
     def _get_item_fields(self, meta: List[Dict[str, Any]]) -> List[str]:
         def keys_filter(key: str) -> bool:
-            return not key.startswith(("comments", "git_uncommitted_changes", "links"))
+            if key.startswith(("comments", "git_uncommitted_changes", "links")):
+                return False
+            if key in ("name", "slug", "saved_at", "created_at"):
+                return False
+            return True
 
         flat = self._prepare_item_dict(meta)
         keys = list(sorted(filter(keys_filter, flat.keys())))

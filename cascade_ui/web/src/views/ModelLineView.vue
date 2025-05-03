@@ -3,7 +3,7 @@ import NavBar from "../components/NavBar.vue";
 import GetRepo from "@/components/GetRepo";
 import GetLine from "@/components/GetLine";
 import GetWorkspace from "@/components/GetWorkspace";
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {ModelLine} from "@/models/ModelLine";
 import type {Repo} from "@/models/Repo";
@@ -132,14 +132,14 @@ const breadcrumbs = computed(() => {
             <v-select
               v-model="selectedFields"
               :items="fieldsOptions"
-              label="Select fields"
+              label="Select columns"
               multiple
               chips
               item-title="."
               item-value="."
               :menu-props="{ closeOnContentClick: false }"
               persistent-hint
-              hint="Choose fields to display"
+              hint="Choose which additional columns to display"
               prepend-icon="mdi-table-column"
             >
               <template #item="{ props }">
@@ -147,7 +147,7 @@ const breadcrumbs = computed(() => {
                 </v-list-item>
               </template>
             </v-select>
-            <v-btn color="primary" @click="applyFields">Apply</v-btn>
+            <v-btn color="primary" @click="applyFields">Request</v-btn>
           </div>
           <v-data-table :headers="dynamicModelHeaders" :items="line.items" class="mt-4">
             <template #item.name="{ item }">
