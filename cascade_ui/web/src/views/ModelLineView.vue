@@ -61,7 +61,7 @@ async function fetchLineItems() {
 }
 
 const fieldsOptions = computed(() => {
-  return line.value?.item_fields || [];
+  return line.value?.item_fields.map(field => field.toString()) || [];
 });
 
 const dynamicModelHeaders = computed(() => {
@@ -142,36 +142,9 @@ const breadcrumbs = computed(() => {
               hint="Choose fields to display"
               prepend-icon="mdi-table-column"
             >
-              <template #item="{ item, props }">
+              <template #item="{ props }">
                 <v-list-item v-bind="props">
-                  <v-list-item-action>
-                    <v-checkbox
-                      :model-value="selectedFields.includes(item as unknown as string)"
-                      @update:model-value="checked => {
-                        const value = item as unknown as string;
-                        if (checked && !selectedFields.includes(value)) selectedFields.push(value)
-                        else if (!checked) selectedFields.splice(selectedFields.indexOf(value), 1)
-                      }"
-                      color="primary"
-                      hide-details
-                      :ripple="false"
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ item }}</v-list-item-title>
-                  </v-list-item-content>
                 </v-list-item>
-              </template>
-              <template #selection="{ item }">
-                <v-chip
-                  v-if="item"
-                  :key="item as unknown as string"
-                  size="small"
-                  color="primary"
-                  class="ma-1"
-                >
-                  {{ item }}
-                </v-chip>
               </template>
             </v-select>
             <v-btn color="primary" @click="applyFields">Apply</v-btn>
