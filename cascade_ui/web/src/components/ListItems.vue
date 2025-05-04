@@ -88,7 +88,7 @@ function unsupportedLineType(type: string) {
 
 <template>
     <div v-if="props.line && props.line.items">
-        <div class="mb-4" style="display: flex; align-items: center; gap: 16px;">
+        <div class="mb-4" style="display: flex; align-items: flex-end; gap: 8px;">
         <v-select
             v-model="selectedFields"
             :items="fieldsOptions"
@@ -100,20 +100,23 @@ function unsupportedLineType(type: string) {
             :menu-props="{ closeOnContentClick: false }"
             persistent-hint
             hint="Choose which additional columns to display"
-            prepend-icon="mdi-table-column"
         >
             <template #item="{ props }">
             <v-list-item v-bind="props">
             </v-list-item>
             </template>
         </v-select>
-        <v-btn color="primary" @click="applyFields">Request</v-btn>
+        <v-btn
+            @click="applyFields"
+            color="#D9D7DD"
+            style="color: #000; height: 56px; min-width: 64px; margin-bottom: 22px;"
+        >Request</v-btn>
         </div>
         <v-data-table :headers="dynamicItemHeaders" :items="line.items" class="mt-4">
         <template #item.name="{ item }">
             <v-btn
                 variant="text"
-                style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;"
+                style="color: #DEB841;"
                 @click="props.line.type === 'model_line'
                   ? openModel(repoName, lineName, item.name)
                   : props.line.type === 'data_line'
