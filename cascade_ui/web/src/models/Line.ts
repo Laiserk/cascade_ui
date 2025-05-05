@@ -19,6 +19,7 @@ export class Line {
     created_at: string;
     updated_at: string;
     items: Response[];
+    item_fields: string[];
 
     constructor(line: Line) {
         this.name = line.name;
@@ -27,5 +28,6 @@ export class Line {
         this.created_at = line.created_at;
         this.updated_at = line.updated_at;
         this.items = line.items;
+        this.item_fields = line.item_fields;
     }
 }

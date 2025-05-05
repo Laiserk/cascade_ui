@@ -18,12 +18,12 @@ import glob
 import logging
 import os
 import warnings
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List
 
-import pydantic
 import uvicorn
 from cascade import __version__ as cascade_version
 from cascade.base import MetaHandler, ZeroMetaError, supported_meta_formats
+from cascade.base.utils import flatten_dict
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 from fastapi import FastAPI, Request
@@ -33,119 +33,25 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 
 from . import __version__
+from .models import (
+    Container,
+    DatasetPathSpec,
+    DatasetResponse,
+    Item,
+    LinePathSpec,
+    LineResponse,
+    LineRow,
+    ModelPathSpec,
+    ModelResponse,
+    RepoPathSpec,
+    RepoResponse,
+    VersionResponse,
+    WorkspaceResponse,
+)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
-
-
-class Container(pydantic.BaseModel):
-    name: str
-    len: int
-
-
-class WorkspaceResponse(Container):
-    repos: List[Container]
-
-
-class RepoPathSpec(pydantic.BaseModel):
-    repo: str
-
-
-class LineRow(Container):
-    type: str
-    created_at: str
-    updated_at: str
-
-
-class RepoResponse(Container):
-    lines: List[LineRow]
-
-
-class LinePathSpec(pydantic.BaseModel):
-    repo: str
-    line: str
-
-
-class Item(pydantic.BaseModel):
-    name: str
-    slug: Optional[str] = None
-    created_at: Optional[str] = None
-    saved_at: str
-
-
-class LineResponse(Container):
-    items: List[Item]
-
-
-class ModelPathSpec(pydantic.BaseModel):
-    repo: str
-    line: str
-    num: int
-
-
-class Comment(pydantic.BaseModel):
-    id: str
-    user: str
-    host: str
-    timestamp: str
-    message: str
-
-
-class Metric(pydantic.BaseModel):
-    name: str
-    value: Optional[float] = None
-    dataset: Optional[str] = None
-    split: Optional[str] = None
-    direction: Optional[Literal["up", "down"]] = None
-    interval: Optional[Tuple[float, float]] = None
-    extra: Optional[Dict[str, Any]] = None
-
-
-class ModelResponse(pydantic.BaseModel):
-    slug: str
-    path: str
-    created_at: str
-    saved_at: str
-    user: str
-    host: str
-    cwd: Optional[str]
-    python_version: str
-    description: Optional[str]
-    comments: List[Comment]
-    tags: List[str]
-    params: Dict[str, Any]
-    metrics: List[Metric]
-    artifacts: List[str]
-    files: List[str]
-    git_commit: Optional[str]
-    git_uncommitted_changes: Optional[List[str]]
-
-
-class DatasetPathSpec(pydantic.BaseModel):
-    repo: str
-    line: str
-    ver: str
-
-
-class DatasetResponse(pydantic.BaseModel):
-    name: str
-    path: str
-    saved_at: str
-    user: str
-    host: str
-    cwd: str
-    python_version: str
-    description: Union[str, None]
-    comments: List[Dict[Any, Any]]
-    tags: Union[str, List[str]]
-    git_commit: Optional[str] = None
-    git_uncommitted_changes: Optional[List[str]] = None
-
-
-class VersionResponse(pydantic.BaseModel):
-    cascade_ml_version: str
-    cascade_ui_version: str
 
 
 class Server:
@@ -211,24 +117,77 @@ class Server:
 
         return RepoResponse(name=path.repo, len=len(lines), lines=line_rows)
 
+    def _prepare_item_dict(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        meta = meta[0]
+        flat = flatten_dict(meta, separator=".", root_keys_to_ignore=("tags", "metrics"))
+
+        metrics = flat.pop("metrics", [])
+        for metric in metrics:
+            name = metric["name"]
+            for key in ["dataset", "split"]:
+                part = metric.get(key)
+                name += "_" + part if part else ""
+            flat[f"metrics.{name}"] = metric["value"]
+
+        return flat
+
+    def _get_item_fields(self, meta: List[Dict[str, Any]]) -> List[str]:
+        def keys_filter(key: str) -> bool:
+            if key.startswith(("comments", "git_uncommitted_changes", "links")):
+                return False
+            if key in ("name", "slug", "tags", "saved_at", "created_at"):
+                return False
+            return True
+
+        flat = self._prepare_item_dict(meta)
+        keys = list(sorted(filter(keys_filter, flat.keys())))
+        return keys
+
+    def line_item_table(
+        self, line_path: LinePathSpec, item_fields: List[str]
+    ) -> List[Dict[str, Any]]:
+        line = self._ws[line_path.repo][line_path.line]
+        items = []
+        for i in range(len(line)):
+            try:
+                meta = line.load_obj_meta(i)
+            except ZeroMetaError:
+                continue
+            item = {}
+            flat = self._prepare_item_dict(meta)
+            for key in item_fields:
+                value = flat.get(key)
+                item[key] = value
+            items.append(item)
+        return items
+
     def line(self, path: LinePathSpec) -> LineResponse:
         line = self._ws[path.repo][path.line]
 
         items = []
         item_names = line.get_item_names()
+        item_fields = set()
         for i, name in enumerate(item_names):
             try:
                 meta = line.load_obj_meta(i)
+                item_fields.update(self._get_item_fields(meta))
             except ZeroMetaError:
                 continue
             item = Item(
                 name=name,
                 slug=meta[0].get("slug"),
+                tags=meta[0].get("tags"),
                 created_at=meta[0].get("created_at"),
                 saved_at=meta[0]["saved_at"],
             )
             items.append(item)
-        return LineResponse(name=path.line, len=len(line), items=items)
+        return LineResponse(
+            name=path.line,
+            len=len(line),
+            type=CLS2TYPE[type(line)],
+            items=items,
+            item_fields=list(item_fields),
+        )
 
     def model(self, path: ModelPathSpec) -> ModelResponse:
         line = self._ws[path.repo][path.line]
@@ -308,6 +267,7 @@ def run(path: str, host: str, port: int):
     app.add_api_route("/v1/model", server.model, methods=["post"])
     app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
     app.add_api_route("/v1/version", server.version, methods=["get"])
+    app.add_api_route("/v1/line_item_table", server.line_item_table, methods=["post"])
 
     app.mount(
         "/assets",

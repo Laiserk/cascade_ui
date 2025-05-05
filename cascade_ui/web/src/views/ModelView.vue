@@ -4,6 +4,7 @@ import GetRepo from "@/components/GetRepo";
 import GetLine from "@/components/GetLine";
 import GetModel from "@/components/GetModel";
 import GetWorkspace from "@/components/GetWorkspace";
+import EnvTable from "@/components/EnvTable.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {Model} from "@/models/Model";
@@ -187,31 +188,7 @@ function goToModel(modelNumString: string) {
               </tbody>
             </v-table>
             <div v-else style="height:24px"></div>
-
-            <div v-if="model && (model.python_version && model.git_commit && model.user && model.host && model.cwd)" style="height:24px">
-              <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
-              <v-table v-if="model">
-                <tbody>
-                  <tr>
-                    <td><b>Python version</b></td>
-                    <td>{{ model.python_version }}</td>
-                  </tr>
-                  <tr>
-                    <td><b>Git commit</b></td>
-                    <td>{{ model.git_commit }}</td>
-                  </tr>
-                  <tr>
-                    <td><b>Host</b></td>
-                    <td>{{ model.user }}@{{ model.host }}</td>
-                  </tr>
-                  <tr>
-                    <td><b>CWD</b></td>
-                    <td>{{ model.cwd }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </div>
-
+            <EnvTable v-if="model" :tr="model"/>
           </div>
           <div class="comments-section">
             <div

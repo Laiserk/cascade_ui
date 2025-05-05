@@ -119,29 +119,7 @@ function goToDataset(datasetVer: string) {
             <div style="margin-top: 20px">
               <p class="text"> {{ dataset?.description }}</p>
             </div>
-
-            <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
-            <v-table v-if="dataset">
-              <tbody>
-                <tr>
-                  <td><b>Python version</b></td>
-                  <td>{{ dataset.python_version }}</td>
-                </tr>
-                <tr>
-                  <td><b>Git commit</b></td>
-                  <td>{{ dataset.git_commit }}</td>
-                </tr>
-                <tr>
-                  <td><b>Host</b></td>
-                  <td>{{ dataset.user }}@{{ dataset.host }}</td>
-                </tr>
-                <tr>
-                  <td><b>CWD</b></td>
-                  <td>{{ dataset.cwd }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-
+            <EnvTable v-if="dataset" :tr="dataset"/>
           </div>
           <div class="comments-section">
             <div
