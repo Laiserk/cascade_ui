@@ -55,6 +55,7 @@ def run(path: str, host: str, port: int):
     app.add_api_route("/v1/model", server.model, methods=["post"])
     app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
     app.add_api_route("/v1/version", server.version, methods=["get"])
+    app.add_api_route("/v1/line_item_table", server.line_item_table, methods=["post"])
 
     app.mount(
         "/assets",

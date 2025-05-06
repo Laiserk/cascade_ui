@@ -122,7 +122,7 @@ class Server:
             return True
 
         flat = self._prepare_item_dict(meta)
-        keys = list(sorted(filter(keys_filter, flat.keys())))
+        keys = list(filter(keys_filter, flat.keys()))
         return keys
 
     def line_item_table(
@@ -168,7 +168,7 @@ class Server:
             len=len(line),
             type=CLS2TYPE[type(line)],
             items=items,
-            item_fields=list(item_fields),
+            item_fields=list(sorted(item_fields)),
         )
 
     def model(self, path: ModelPathSpec) -> ModelResponse:
