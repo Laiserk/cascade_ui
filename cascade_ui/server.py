@@ -26,10 +26,22 @@ from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 
 from . import __version__
-from .models import (Container, DatasetPathSpec, DatasetResponse, Item,
-                     LinePathSpec, LineResponse, LineRow, ModelPathSpec,
-                     ModelResponse, RepoPathSpec, RepoResponse,
-                     VersionResponse, WorkspaceResponse)
+from .models import (
+    Container,
+    DatasetPathSpec,
+    DatasetResponse,
+    Item,
+    LinePathSpec,
+    LineResponse,
+    LineRow,
+    LogResponse,
+    ModelPathSpec,
+    ModelResponse,
+    RepoPathSpec,
+    RepoResponse,
+    VersionResponse,
+    WorkspaceResponse,
+)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -195,6 +207,17 @@ class Server:
             git_commit=meta[0].get("git_commit"),
             git_uncommitted_changes=meta[0].get("git_uncommitted_changes"),
         )
+
+    def run_log(self, path: ModelPathSpec) -> LogResponse:
+        log_file = os.path.join(
+            self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_run.log"
+        )
+        if not os.path.exists(log_file):
+            log_text = None
+
+        with open(log_file, "r") as f:
+            log_text = "\n".join(f.readlines())
+        return LogResponse(log_text=log_text)
 
     def dataset(self, path: DatasetPathSpec) -> DatasetResponse:
         line = self._ws[path.repo].add_line(path.line, line_type="data")
