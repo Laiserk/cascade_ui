@@ -15,39 +15,21 @@ limitations under the License.
 """
 
 import glob
-import logging
 import os
 import warnings
 from typing import Any, Dict, List
 
-import uvicorn
 from cascade import __version__ as cascade_version
 from cascade.base import MetaHandler, ZeroMetaError, supported_meta_formats
 from cascade.base.utils import flatten_dict
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from starlette.responses import Response
 
 from . import __version__
-from .models import (
-    Container,
-    DatasetPathSpec,
-    DatasetResponse,
-    Item,
-    LinePathSpec,
-    LineResponse,
-    LineRow,
-    ModelPathSpec,
-    ModelResponse,
-    RepoPathSpec,
-    RepoResponse,
-    VersionResponse,
-    WorkspaceResponse,
-)
+from .models import (Container, DatasetPathSpec, DatasetResponse, Item,
+                     LinePathSpec, LineResponse, LineRow, ModelPathSpec,
+                     ModelResponse, RepoPathSpec, RepoResponse,
+                     VersionResponse, WorkspaceResponse)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -238,67 +220,3 @@ class Server:
             cascade_ml_version=cascade_version,
             cascade_ui_version=__version__,
         )
-
-
-def run(path: str, host: str, port: int):
-    logging.basicConfig(level="INFO")
-    logger = logging.getLogger(__file__)
-
-    cwd = os.path.abspath(path)
-    logger.info(f"Starting in {cwd}")
-
-    server = Server(cwd)
-
-    package_dir = os.path.dirname(os.path.abspath(__file__))
-
-    app = FastAPI(title="CascadeUI Backend", version=__version__)
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    app.add_api_route("/v1/workspace", server.workspace, methods=["post"])
-    app.add_api_route("/v1/repo", server.repo, methods=["post"])
-    app.add_api_route("/v1/line", server.line, methods=["post"])
-    app.add_api_route("/v1/model", server.model, methods=["post"])
-    app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
-    app.add_api_route("/v1/version", server.version, methods=["get"])
-    app.add_api_route("/v1/line_item_table", server.line_item_table, methods=["post"])
-
-    app.mount(
-        "/assets",
-        StaticFiles(
-            directory=os.path.join(package_dir, "web", "dist", "assets"),
-            html=False,
-            check_dir=True,
-        ),
-        name="assets",
-    )
-
-    app.mount(
-        "/logo.svg",
-        StaticFiles(
-            directory=os.path.join(package_dir, "web", "dist"),
-            html=False,
-            check_dir=True,
-        ),
-        name="favicon",
-    )
-
-    @app.get("/{full_path:path}")
-    async def fallback(full_path: str, request: Request):
-        if (
-            request.method == "GET"
-            and not full_path.startswith("v1/")
-            and not full_path.startswith("assets/")
-            and full_path != "favicon.ico"
-        ):
-            index_path = os.path.join(package_dir, "web", "dist", "index.html")
-            return FileResponse(index_path)
-        return Response(status_code=404)
-
-    uvicorn.run(app, host=host, port=port)

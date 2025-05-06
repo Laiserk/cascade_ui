@@ -23,7 +23,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     python_requires=">=3.8",
     install_requires=[
-        "cascade-ml>=0.14.2",
+        "cascade-ml>=0.16.0",
         "fastapi>=0.110.0",
         "uvicorn>=0.29.0",
         "pydantic>=2.6.4",
