@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="cascade-ui",
-    version="0.1.0",
+    version="0.1.1",
     author="Oleg Sevostyanov,Ilia Moiseev",
     author_email="ilia.moiseev.5@yandex.ru",
     license="Apache License 2.0",
