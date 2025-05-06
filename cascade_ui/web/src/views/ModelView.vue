@@ -4,6 +4,7 @@ import GetRepo from "@/components/GetRepo";
 import GetLine from "@/components/GetLine";
 import GetModel from "@/components/GetModel";
 import GetWorkspace from "@/components/GetWorkspace";
+import LogView from "@/components/LogView.vue";
 import EnvTable from "@/components/EnvTable.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
@@ -11,6 +12,7 @@ import {Model} from "@/models/Model";
 import {ModelLine} from "@/models/ModelLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
+import { ModelPathSpec } from "@/models/PathSpecs";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 
@@ -25,6 +27,17 @@ const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
 const line = ref<ModelLine | null>(null);
 const model = ref<Model | null>(null);
+
+const modelPath = computed(() => {
+  if (repo.value && line.value && model.value) {
+    return new ModelPathSpec({
+      repo: repo.value.name,
+      line: line.value.name,
+      num: modelNum.value,
+    });
+  }
+  return null;
+});
 
 async function loadModelData() {
   const wsObj = await GetWorkspace();
@@ -189,6 +202,7 @@ function goToModel(modelNumString: string) {
             </v-table>
             <div v-else style="height:24px"></div>
             <EnvTable v-if="model" :tr="model"/>
+            <LogView v-if="modelPath" :path="modelPath" />
           </div>
           <div class="comments-section">
             <div
