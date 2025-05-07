@@ -8,7 +8,20 @@ class Container(pydantic.BaseModel):
     len: int
 
 
-class WorkspaceResponse(Container):
+class Comment(pydantic.BaseModel):
+    id: str
+    user: str
+    host: str
+    timestamp: str
+    message: str
+
+
+class Traceable(pydantic.BaseModel):
+    tags: List[str]
+    comments: List[Comment]
+
+
+class WorkspaceResponse(Traceable, Container):
     repos: List[Container]
 
 
@@ -22,7 +35,7 @@ class LineRow(Container):
     updated_at: str
 
 
-class RepoResponse(Container):
+class RepoResponse(Traceable, Container):
     lines: List[LineRow]
 
 
@@ -39,7 +52,7 @@ class Item(pydantic.BaseModel):
     saved_at: str
 
 
-class LineResponse(Container):
+class LineResponse(Traceable, Container):
     type: Literal["model_line", "data_line"]
     items: List[Item]
     item_fields: List[str]
@@ -49,14 +62,6 @@ class ModelPathSpec(pydantic.BaseModel):
     repo: str
     line: str
     num: int
-
-
-class Comment(pydantic.BaseModel):
-    id: str
-    user: str
-    host: str
-    timestamp: str
-    message: str
 
 
 class Metric(pydantic.BaseModel):
@@ -69,7 +74,7 @@ class Metric(pydantic.BaseModel):
     extra: Optional[Dict[str, Any]] = None
 
 
-class ModelResponse(pydantic.BaseModel):
+class ModelResponse(Traceable):
     slug: str
     path: str
     created_at: str
@@ -79,8 +84,6 @@ class ModelResponse(pydantic.BaseModel):
     cwd: Optional[str]
     python_version: str
     description: Optional[str]
-    comments: List[Comment]
-    tags: List[str]
     params: Dict[str, Any]
     metrics: List[Metric]
     artifacts: List[str]
@@ -95,7 +98,7 @@ class DatasetPathSpec(pydantic.BaseModel):
     ver: str
 
 
-class DatasetResponse(pydantic.BaseModel):
+class DatasetResponse(Traceable):
     name: str
     path: str
     saved_at: str
@@ -104,8 +107,6 @@ class DatasetResponse(pydantic.BaseModel):
     cwd: str
     python_version: str
     description: Union[str, None]
-    comments: List[Dict[Any, Any]]
-    tags: Union[str, List[str]]
     git_commit: Optional[str] = None
     git_uncommitted_changes: Optional[List[str]] = None
 
