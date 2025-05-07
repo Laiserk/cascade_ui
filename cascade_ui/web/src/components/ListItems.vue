@@ -2,6 +2,7 @@
 import { Line } from "@/models/Line";
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from 'vue-router'
+import { fetchLineItems } from "./fetchLineItems";
 
 const props = defineProps<{ line: Line }>();
 const selectedFields = ref<string[]>([]);
@@ -32,44 +33,15 @@ const dynamicItemHeaders = computed(() => {
   return baseHeaders.concat(selected);
 });
 
-async function fetchLineItems() {
-  if (!repoName.value || !lineName.value) return;
-  const fields = Array.from(new Set(selectedFields.value));
-  const response = await fetch("/v1/line_item_table", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      line_path: { repo: repoName.value, line: lineName.value },
-      item_fields: fields,
-    }),
-  });
-  if (response.ok) {
-    const items = await response.json();
-    if (props.line) {
-      const filledItems = items.map((item: Record<string, any>, idx: number) => {
-        let existing: Record<string, any> | undefined = undefined;
-        if (props.line && Array.isArray(props.line.items)) {
-          existing = props.line.items[idx] as Record<string, any>;
-        }
-        for (const field of defaultFields) {
-          if (!(field in item)) {
-            if (existing && field in existing) {
-              item[field] = existing[field];
-            } else {
-              item[field] = "";
-            }
-          }
-        }
-        return item;
-      });
-      props.line.items = filledItems;
-    }
-  }
-}
-
 function applyFields() {
   requestClicked.value = true;
-  fetchLineItems();
+  fetchLineItems(
+    repoName.value,
+    lineName.value,
+    selectedFields.value,
+    props.line,
+    defaultFields
+  );
 }
 
 function openModel(repoName: string, lineName: string, modelNumString: string) {

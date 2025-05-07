@@ -20,6 +20,7 @@ export class Line {
     updated_at: string;
     items: Response[];
     item_fields: string[];
+    plot_fields: string[];
 
     constructor(line: Line) {
         this.name = line.name;
@@ -29,5 +30,6 @@ export class Line {
         this.updated_at = line.updated_at;
         this.items = line.items;
         this.item_fields = line.item_fields;
+        this.plot_fields = line.plot_fields;
     }
 }
