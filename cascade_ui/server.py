@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import glob
+import json
 import os
 import warnings
 from typing import Any, Dict, List
@@ -27,6 +28,7 @@ from cascade.workspaces import Workspace
 
 from . import __version__
 from .models import (
+    ConfigResponse,
     Container,
     DatasetPathSpec,
     DatasetResponse,
@@ -212,12 +214,37 @@ class Server:
         log_file = os.path.join(
             self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_run.log"
         )
-        if not os.path.exists(log_file):
-            log_text = None
+        log_text = None
+        if os.path.exists(log_file):
+            with open(log_file, "r") as f:
+                log_text = "\n".join(f.readlines())
 
-        with open(log_file, "r") as f:
-            log_text = "\n".join(f.readlines())
         return LogResponse(log_text=log_text)
+
+    def run_config(self, path: ModelPathSpec) -> ConfigResponse:
+        config_file = os.path.join(
+            self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_config.json"
+        )
+        overrides_file = os.path.join(
+            self._ws_name,
+            path.repo,
+            path.line,
+            f"{path.num:0>5d}",
+            "files",
+            "cascade_overrides.json",
+        )
+        config = None
+        overrides = None
+
+        if os.path.exists(config_file):
+            with open(config_file, "r") as f:
+                config = json.load(f)
+
+        if os.path.exists(overrides_file):
+            with open(overrides_file, "r") as f:
+                overrides = json.load(f)
+
+        return ConfigResponse(config=config, overrides=overrides)
 
     def dataset(self, path: DatasetPathSpec) -> DatasetResponse:
         line = self._ws[path.repo].add_line(path.line, line_type="data")

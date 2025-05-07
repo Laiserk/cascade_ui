@@ -117,3 +117,8 @@ class VersionResponse(pydantic.BaseModel):
 
 class LogResponse(pydantic.BaseModel):
     log_text: Optional[str]
+
+
+class ConfigResponse(pydantic.BaseModel):
+    config: Optional[Dict[str, Any]]
+    overrides: Optional[Dict[str, Any]]
