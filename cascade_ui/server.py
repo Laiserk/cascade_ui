@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import glob
+import json
 import os
 import warnings
 from typing import Any, Dict, List
@@ -26,10 +27,23 @@ from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 
 from . import __version__
-from .models import (Container, DatasetPathSpec, DatasetResponse, Item,
-                     LinePathSpec, LineResponse, LineRow, ModelPathSpec,
-                     ModelResponse, RepoPathSpec, RepoResponse,
-                     VersionResponse, WorkspaceResponse)
+from .models import (
+    ConfigResponse,
+    Container,
+    DatasetPathSpec,
+    DatasetResponse,
+    Item,
+    LinePathSpec,
+    LineResponse,
+    LineRow,
+    LogResponse,
+    ModelPathSpec,
+    ModelResponse,
+    RepoPathSpec,
+    RepoResponse,
+    VersionResponse,
+    WorkspaceResponse,
+)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -122,7 +136,7 @@ class Server:
             return True
 
         flat = self._prepare_item_dict(meta)
-        keys = list(sorted(filter(keys_filter, flat.keys())))
+        keys = list(filter(keys_filter, flat.keys()))
         return keys
 
     def line_item_table(
@@ -168,7 +182,7 @@ class Server:
             len=len(line),
             type=CLS2TYPE[type(line)],
             items=items,
-            item_fields=list(item_fields),
+            item_fields=list(sorted(item_fields)),
         )
 
     def model(self, path: ModelPathSpec) -> ModelResponse:
@@ -195,6 +209,42 @@ class Server:
             git_commit=meta[0].get("git_commit"),
             git_uncommitted_changes=meta[0].get("git_uncommitted_changes"),
         )
+
+    def run_log(self, path: ModelPathSpec) -> LogResponse:
+        log_file = os.path.join(
+            self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_run.log"
+        )
+        log_text = None
+        if os.path.exists(log_file):
+            with open(log_file, "r") as f:
+                log_text = "\n".join(f.readlines())
+
+        return LogResponse(log_text=log_text)
+
+    def run_config(self, path: ModelPathSpec) -> ConfigResponse:
+        config_file = os.path.join(
+            self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_config.json"
+        )
+        overrides_file = os.path.join(
+            self._ws_name,
+            path.repo,
+            path.line,
+            f"{path.num:0>5d}",
+            "files",
+            "cascade_overrides.json",
+        )
+        config = None
+        overrides = None
+
+        if os.path.exists(config_file):
+            with open(config_file, "r") as f:
+                config = json.load(f)
+
+        if os.path.exists(overrides_file):
+            with open(overrides_file, "r") as f:
+                overrides = json.load(f)
+
+        return ConfigResponse(config=config, overrides=overrides)
 
     def dataset(self, path: DatasetPathSpec) -> DatasetResponse:
         line = self._ws[path.repo].add_line(path.line, line_type="data")

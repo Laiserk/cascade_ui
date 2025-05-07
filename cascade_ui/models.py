@@ -113,3 +113,12 @@ class DatasetResponse(pydantic.BaseModel):
 class VersionResponse(pydantic.BaseModel):
     cascade_ml_version: str
     cascade_ui_version: str
+
+
+class LogResponse(pydantic.BaseModel):
+    log_text: Optional[str]
+
+
+class ConfigResponse(pydantic.BaseModel):
+    config: Optional[Dict[str, Any]]
+    overrides: Optional[Dict[str, Any]]
