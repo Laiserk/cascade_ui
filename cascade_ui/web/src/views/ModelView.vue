@@ -15,6 +15,7 @@ import type {Workspace} from "@/models/Workspace";
 import { ModelPathSpec } from "@/models/PathSpecs";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
+import ConfigView from "@/components/ConfigView.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -203,6 +204,7 @@ function goToModel(modelNumString: string) {
             <div v-else style="height:24px"></div>
             <EnvTable v-if="model" :tr="model"/>
             <LogView v-if="modelPath" :path="modelPath" />
+            <ConfigView v-if="modelPath" :path="modelPath" />
           </div>
           <div class="comments-section">
             <div

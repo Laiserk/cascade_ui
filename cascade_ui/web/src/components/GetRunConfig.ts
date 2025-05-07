@@ -1,8 +1,8 @@
-import type {LogResponse} from "@/models/LogResponse";
+import type {ConfigResponse} from "@/models/ConfigResponse";
 import type { ModelPathSpec } from "@/models/PathSpecs";
 
-export default async function GetRunLog(path: ModelPathSpec): Promise<LogResponse> {
-  return fetch('http://localhost:8000/v1/run_log', {
+export default async function GetRunConfig(path: ModelPathSpec): Promise<ConfigResponse> {
+  return fetch('http://localhost:8000/v1/run_config', {
     method: "post",
     headers: {
       "Access-Control-Allow-Origin": "*",
