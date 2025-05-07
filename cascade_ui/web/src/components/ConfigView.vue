@@ -24,7 +24,7 @@ function parseConfig(response: ConfigResponse) {
     if (key in overrides) {
       return {
         key,
-        value: `${config[key]} -> ${overrides[key]}`,
+        value: `${overrides[key]}`,
         overridden: true,
         oldValue: config[key],
         newValue: overrides[key]
