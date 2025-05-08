@@ -248,6 +248,8 @@ function goToModel(modelNumString: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .model-list-item {
   padding: 8px 12px;
@@ -265,7 +267,7 @@ function goToModel(modelNumString: string) {
 }
 .model-info {
   margin-top: 20px;
-  width: 60%;
+  width: 50%;
   margin-left: 0;
   margin-right: 0;
 }
@@ -276,6 +278,8 @@ function goToModel(modelNumString: string) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .slug {
   font-family: Roboto;
