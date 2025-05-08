@@ -2,6 +2,7 @@
 import { Line } from "@/models/Line";
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from 'vue-router'
+import TagsRow from "./TagsRow.vue"
 
 const props = defineProps<{ line: Line }>();
 const selectedFields = ref<string[]>([]);
@@ -125,6 +126,9 @@ function unsupportedLineType(type: string) {
             >
             {{ item.name }}
             </v-btn>
+        </template>
+        <template #item.tags="{ item }">
+            <TagsRow :tags="item.tags" />
         </template>
         </v-data-table>
     </div>

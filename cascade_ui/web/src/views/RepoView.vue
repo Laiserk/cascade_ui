@@ -7,6 +7,7 @@ import { Repo as RepoClass } from "@/models/Repo";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
+import TagsRow from "@/components/TagsRow.vue"
 
 import { useRouter, useRoute } from 'vue-router'
 
@@ -79,6 +80,9 @@ const lineHeaders = [
             <v-btn variant="text" style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;" @click="openLine(repoName, item.name, item.type)">
               {{ item.name }}
             </v-btn>
+          </template>
+          <template #item.tags="{ item }">
+            <TagsRow :tags="item.tags" />
           </template>
         </v-data-table>
       </div>

@@ -3,12 +3,14 @@ import {ItemComment} from "@/models/ItemComment";
 export class Response {
     name: string;
     slug: string;
+    tags: string[];
     created_at: string;
     saved_at: string;
 
     constructor(model_response: Response) {
         this.name = model_response.name;
         this.slug = model_response.slug;
+        this.tags = model_response.tags;
         this.created_at = model_response.created_at;
         this.saved_at = model_response.saved_at;
     }
