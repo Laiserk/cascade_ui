@@ -29,7 +29,6 @@ from cascade.workspaces import Workspace
 from . import __version__
 from .models import (
     ConfigResponse,
-    Container,
     DatasetPathSpec,
     DatasetResponse,
     Item,
@@ -118,6 +117,7 @@ class Server:
                 name=name,
                 len=len(line),
                 type=t,
+                tags=meta[0].get("tags"),
                 created_at=created_at,
                 updated_at=updated_at,
             )

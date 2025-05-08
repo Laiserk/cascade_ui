@@ -37,6 +37,7 @@ class RepoPathSpec(pydantic.BaseModel):
 
 class LineRow(Container):
     type: str
+    tags: List[str]
     created_at: str
     updated_at: str
 

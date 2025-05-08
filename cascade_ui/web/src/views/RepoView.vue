@@ -44,13 +44,13 @@ const breadcrumbs = computed(() => {
   return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value);
 });
 
-// Table headers for lines
 const lineHeaders = [
   { title: 'Name', value: 'name' },
   { title: 'Type', value: 'type' },
+  { title: 'Len', value: 'len' },
+  { title: 'Tags', value: 'tags' },
   { title: 'Created', value: 'created_at' },
   { title: 'Updated', value: 'updated_at' },
-  { title: 'Len', value: 'len' },
 ];
 
 </script>
