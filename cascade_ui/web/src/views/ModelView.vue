@@ -175,8 +175,8 @@ function goToModel(modelNumString: string) {
             <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
             <v-table v-if="model && model.artifacts && model.artifacts.length">
               <tbody>
-                <tr v-for="artifact in model.artifacts" :key="artifact">
-                  <td>{{ artifact }}</td>
+                <tr v-for="artifact in model.artifacts" :key="artifact.name">
+                  <td>{{ artifact.name }}</td>
                 </tr>
               </tbody>
             </v-table>
@@ -185,8 +185,9 @@ function goToModel(modelNumString: string) {
             <v-subheader style="margin-top: 32px;">FILES</v-subheader>
             <v-table v-if="model && model.files && model.files.length">
               <tbody>
-                <tr v-for="file in model.files" :key="file">
-                  <td>{{ file }}</td>
+                <tr v-for="file in model.files" :key="file.name">
+                  <td>{{ file.name }}</td>
+                  <td>{{ file.size }}</td>
                 </tr>
               </tbody>
             </v-table>

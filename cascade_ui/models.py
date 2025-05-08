@@ -81,6 +81,11 @@ class Metric(pydantic.BaseModel):
     extra: Optional[Dict[str, Any]] = None
 
 
+class File(pydantic.BaseModel):
+    name: str
+    size: str
+
+
 class ModelResponse(Traceable):
     slug: str
     path: str
@@ -93,8 +98,8 @@ class ModelResponse(Traceable):
     description: Optional[str]
     params: Dict[str, Any]
     metrics: List[Metric]
-    artifacts: List[str]
-    files: List[str]
+    artifacts: List[File]
+    files: List[File]
     git_commit: Optional[str]
     git_uncommitted_changes: Optional[List[str]]
 

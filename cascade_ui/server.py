@@ -31,6 +31,7 @@ from .models import (
     ConfigResponse,
     DatasetPathSpec,
     DatasetResponse,
+    File,
     Item,
     LinePathSpec,
     LineResponse,
@@ -206,10 +207,33 @@ class Server:
             item_fields=list(sorted(item_fields)),
         )
 
+    def _file_size_string(self, size_bytes: int) -> str:
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024**2:
+            return f"{size_bytes / 1024:.1f} KB"
+        elif size_bytes < 1024**3:
+            return f"{size_bytes / 1024**2:.1f} MB"
+        else:
+            return f"{size_bytes / 1024**3:.1f} GB"
+
     def model(self, path: ModelPathSpec) -> ModelResponse:
         line = self._ws[path.repo][path.line]
         meta = line.load_model_meta(path.num)
-        files = line.load_artifact_paths(path.num)
+        paths = line.load_artifact_paths(path.num)
+
+        files = []
+        artifacts = []
+        for key in paths:
+            for path in paths[key]:
+                if os.path.exists(path):
+                    size_bytes = os.path.getsize(path)
+                    size_str = self._file_size_string(size_bytes)
+                    file = File(name=path, size=size_str)
+                    if key == "artifacts":
+                        artifacts.append(file)
+                    else:
+                        files.append(file)
 
         return ModelResponse(
             slug=meta[0]["slug"],
@@ -225,8 +249,8 @@ class Server:
             tags=meta[0]["tags"],
             params=meta[0]["params"],
             metrics=meta[0]["metrics"],
-            artifacts=files["artifacts"],
-            files=files["files"],
+            artifacts=artifacts,
+            files=files,
             git_commit=meta[0].get("git_commit"),
             git_uncommitted_changes=meta[0].get("git_uncommitted_changes"),
         )
