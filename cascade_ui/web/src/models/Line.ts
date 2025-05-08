@@ -1,3 +1,5 @@
+import {ItemComment} from "@/models/ItemComment";
+
 export class Response {
     name: string;
     slug: string;
@@ -20,6 +22,8 @@ export class Line {
     updated_at: string;
     items: Response[];
     item_fields: string[];
+    tags: string[];
+    comments: ItemComment[];
 
     constructor(line: Line) {
         this.name = line.name;
@@ -29,5 +33,7 @@ export class Line {
         this.updated_at = line.updated_at;
         this.items = line.items;
         this.item_fields = line.item_fields;
+        this.tags = line.tags;
+        this.comments = line.comments;
     }
 }
