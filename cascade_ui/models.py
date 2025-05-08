@@ -21,8 +21,14 @@ class Traceable(pydantic.BaseModel):
     comments: List[Comment]
 
 
-class WorkspaceResponse(Traceable, Container):
-    repos: List[Container]
+class RepoCard(Container):
+    tags: List[str]
+
+
+class WorkspaceResponse(Container):
+    tags: List[str]
+    comments: List[Comment]
+    repos: List[RepoCard]
 
 
 class RepoPathSpec(pydantic.BaseModel):

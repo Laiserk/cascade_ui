@@ -6,6 +6,7 @@ import GetModel from "@/components/GetModel";
 import GetWorkspace from "@/components/GetWorkspace";
 import LogView from "@/components/LogView.vue";
 import EnvTable from "@/components/EnvTable.vue";
+import TagsRow from "@/components/TagsRow.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {Model} from "@/models/Model";
@@ -118,19 +119,7 @@ function goToModel(modelNumString: string) {
           <div class="model-info">
             <p class="slug"> {{ model?.slug }}</p>
             <p class="text"> {{ model?.path }}</p>
-            <div class="tags-row" v-if="model?.tags && model.tags.length">
-              <v-chip
-                v-for="tag in model.tags"
-                :key="tag"
-                class="tag-chip"
-                :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
-                background="#D9D7DD"
-                text-color="#555"
-                outlined
-              >
-                {{ tag }}
-              </v-chip>
-            </div>
+            <TagsRow v-if="model" :tags="model.tags"/>
             <p class="text"> Created: {{ model?.created_at }}</p>
             <p class="text"> Saved: {{ model?.saved_at }}</p>
             <div style="margin-top: 20px;margin-bottom: 20px">

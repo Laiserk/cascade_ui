@@ -39,6 +39,7 @@ from .models import (
     LogResponse,
     ModelPathSpec,
     ModelResponse,
+    RepoCard,
     RepoPathSpec,
     RepoResponse,
     VersionResponse,
@@ -79,10 +80,13 @@ class Server:
     def workspace(self) -> WorkspaceResponse:
         self._ws = Workspace(self._ws_name)
         ws_meta = self._ws.get_meta()
-        repo_names = self._ws.get_repo_names()
-        repo_lengths = [len(self._ws[name]) for name in repo_names]
 
-        repos = [Container(name=name, len=length) for name, length in zip(repo_names, repo_lengths)]
+        repos = []
+        for name in self._ws.get_repo_names():
+            repo = self._ws[name]
+            meta = repo.get_meta()
+            card = RepoCard(name=name, len=len(repo), tags=meta[0].get("tags"))
+            repos.append(card)
 
         return WorkspaceResponse(
             name=self._ws_name,
