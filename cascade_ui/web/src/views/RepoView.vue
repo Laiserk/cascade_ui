@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import TagsRow from "@/components/TagsRow.vue"
+import CommentFeed from "@/components/CommentFeed.vue";
 import GetRepo from "@/utils/GetRepo";
 import GetWorkspace from "@/utils/GetWorkspace";
 import {openLine, openWorkspace} from "@/utils/Open";
@@ -21,14 +22,18 @@ const repoName = computed(() => route.params.repoName as string)
 const repo = ref<Repo | null>(null);
 const router = useRouter();
 
-onMounted(async () => {
+const tab = ref(0);
+
+async function loadRepoData() {
   const wsObj = await GetWorkspace();
   workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
   if (workspace.value && repoName.value) {
     const repoObj = await GetRepo(repoName.value);
     repo.value = new RepoClass(repoObj);
   }
-});
+}
+
+onMounted(loadRepoData);
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
@@ -75,42 +80,48 @@ function onBreadcrumbClick(e: any) {
 </script>
 
 <template>
-
-  <head>
-    <meta charset="utf-8"/>
-    <title>List of experiments</title>
-    <link rel="icon" href="/logo.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-          rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-        rel="stylesheet">
-  </head>
-
-  <body>
-    <div>
+  <div>
     <NavBar/>
     <div class="content">
       <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
-      <div v-if="repo && repo.lines">
-        <v-data-table :headers="lineHeaders" :items="processedLines" class="mt-4">
-          <template #item.name="{ item }">
-            <v-btn
-              variant="text"
-              style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;"
-              @click="openLine(router, item.linePathSpec)"
-            >
-              {{ item.name }}
-            </v-btn>
-          </template>
-          <template #item.tags="{ item }">
-            <TagsRow :tags="item.tags" />
-          </template>
-        </v-data-table>
-      </div>
+      <v-tabs v-model="tab" color="primary" grow>
+        <v-tab>General</v-tab>
+        <v-tab>Comments</v-tab>
+      </v-tabs>
+      <v-tabs-items v-model="tab">
+        <v-tab-item>
+          <div v-if="tab === 0">
+            <div v-if="repo && repo.lines">
+              <v-data-table :headers="lineHeaders" :items="processedLines" class="mt-4">
+                <template #item.name="{ item }">
+                  <v-btn
+                    variant="text"
+                    style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;"
+                    @click="openLine(router, item.linePathSpec)"
+                  >
+                    {{ item.name }}
+                  </v-btn>
+                </template>
+                <template #item.tags="{ item }">
+                  <TagsRow :tags="item.tags" />
+                </template>
+              </v-data-table>
+            </div>
+          </div>
+        </v-tab-item>
+        <v-tab-item>
+          <div v-if="tab === 1">
+            <CommentFeed
+              v-if="repo"
+              :comments="repo.comments"
+              :pathParts="[repoName]"
+              :onCommentSent="loadRepoData"
+            />
+          </div>
+        </v-tab-item>
+      </v-tabs-items>
     </div>
   </div>
-  </body>
 </template>
 
 <style>
