@@ -21,13 +21,19 @@ import warnings
 from typing import Any, Dict, List
 
 from cascade import __version__ as cascade_version
-from cascade.base import MetaHandler, ZeroMetaError, supported_meta_formats
+from cascade.base import (
+    MetaHandler,
+    TraceableOnDisk,
+    ZeroMetaError,
+    supported_meta_formats,
+)
 from cascade.base.utils import flatten_dict
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 
 from . import __version__
 from .models import (
+    AddCommentRequest,
     ConfigResponse,
     DatasetPathSpec,
     DatasetResponse,
@@ -76,6 +82,11 @@ class Server:
         self._ws_meta = meta
         self._ws = Workspace(path)
         self._ws_name = self._ws.get_root()
+
+    def add_comment(self, req: AddCommentRequest):
+        path = os.path.join(self._ws_name, *req.path_parts)
+        tr = TraceableOnDisk(path, meta_fmt=".json")
+        tr.comment(req.comment)
 
     def workspace(self) -> WorkspaceResponse:
         self._ws = Workspace(self._ws_name)

@@ -18,6 +18,7 @@ import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
+import { commentAdd } from "@/utils/Comments";
 
 const route = useRoute()
 const router = useRouter()
@@ -42,6 +43,9 @@ const modelPath = computed(() => {
   return null;
 });
 
+const newComment = ref("");
+const sendingComment = ref(false);
+
 async function loadModelData() {
   const wsObj = await GetWorkspace();
   workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
@@ -56,6 +60,22 @@ async function loadModelData() {
         model.value = new Model(modelObj);
       }
     }
+  }
+}
+
+async function sendComment() {
+  if (!newComment.value.trim() || sendingComment.value || !model.value) return;
+  sendingComment.value = true;
+  try {
+    await commentAdd(
+      newComment.value,
+      [repoName.value, lineName.value, modelNumString.value]
+    );
+    // Reload model data to update comments
+    await loadModelData();
+    newComment.value = "";
+  } finally {
+    sendingComment.value = false;
   }
 }
 
@@ -241,6 +261,23 @@ function goToModel(modelNumString: string) {
                 {{ comment.message }}
               </div>
             </div>
+            <div class="comment-input-row">
+              <input
+                v-model="newComment"
+                :disabled="sendingComment"
+                class="comment-input"
+                placeholder="Add a comment..."
+                @keyup.enter="sendComment"
+              />
+              <button
+                class="comment-send-btn"
+                :disabled="sendingComment || !newComment.trim()"
+                @click="sendComment"
+              >
+                <span v-if="!sendingComment">Send</span>
+                <span v-else>...</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -362,5 +399,37 @@ function goToModel(modelNumString: string) {
   font-size: 16px;
   color: #222;
   word-break: break-word;
+}
+.comment-input-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.comment-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  font-family: Roboto;
+  outline: none;
+  background: #fff;
+}
+.comment-send-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #DB504A;
+  color: #fff;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.comment-send-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 </style>
