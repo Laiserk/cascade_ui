@@ -13,6 +13,7 @@ import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
+import CommentFeed from "@/components/CommentFeed.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -152,21 +153,12 @@ function goToDataset(datasetVer: string) {
             </div>
             <EnvTable v-if="dataset" :tr="dataset"/>
           </div>
-          <div class="comments-section">
-            <div
-              v-for="comment in dataset?.comments"
-              :key="comment.id"
-              class="comment-bubble"
-            >
-              <div class="comment-header">
-                <span class="comment-user">{{ comment.user }}@{{ comment.host }}</span>
-                <span class="comment-timestamp">{{ comment.timestamp }}</span>
-              </div>
-              <div class="comment-message">
-                {{ comment.message }}
-              </div>
-            </div>
-          </div>
+          <CommentFeed
+            v-if="dataset"
+            :comments="dataset.comments"
+            :pathParts="[repoName, lineName, datasetVer]"
+            :onCommentSent="loadDatasetData"
+          />
         </div>
       </div>
     </div>
@@ -182,10 +174,10 @@ function goToDataset(datasetVer: string) {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  width: 100%;
+  width: 50%;
 }
 .dataset-list-column {
-  width: 20%;
+  width: 10%;
   min-width: 120px;
   margin-top: 20px;
   margin-right: 40px;
@@ -223,19 +215,10 @@ function goToDataset(datasetVer: string) {
 }
 .dataset-info {
   margin-top: 20px;
-  width: 60%;
+  flex: 0 1 70%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
-}
-.comments-section {
-  flex: 1;
-  margin-top: 20px;
-  margin-left: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 1000px;
-  overflow-y: auto;
 }
 .slug {
   font-family: Roboto;
@@ -258,34 +241,5 @@ function goToDataset(datasetVer: string) {
   border-radius: 10px;
   align-items: center;
   display: flex;
-}
-.comment-bubble {
-  background: #f4f4f4;
-  border-radius: 12px;
-  padding: 16px;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #888;
-}
-.comment-user {
-  font-weight: bold;
-}
-.comment-timestamp {
-  font-size: 13px;
-  color: #aaa;
-}
-.comment-message {
-  font-size: 16px;
-  color: #222;
-  word-break: break-word;
 }
 </style>
