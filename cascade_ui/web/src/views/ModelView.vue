@@ -18,7 +18,7 @@ import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
-import { commentAdd } from "@/utils/Comments";
+import CommentFeed from "@/components/CommentFeed.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -43,8 +43,6 @@ const modelPath = computed(() => {
   return null;
 });
 
-const newComment = ref("");
-const sendingComment = ref(false);
 const tab = ref(0);
 
 async function loadModelData() {
@@ -61,22 +59,6 @@ async function loadModelData() {
         model.value = new Model(modelObj);
       }
     }
-  }
-}
-
-async function sendComment() {
-  if (!newComment.value.trim() || sendingComment.value || !model.value) return;
-  sendingComment.value = true;
-  try {
-    await commentAdd(
-      newComment.value,
-      [repoName.value, lineName.value, modelNumString.value]
-    );
-    // Reload model data to update comments
-    await loadModelData();
-    newComment.value = "";
-  } finally {
-    sendingComment.value = false;
   }
 }
 
@@ -255,38 +237,12 @@ function goToModel(modelNumString: string) {
                     <div v-else style="height:24px"></div>
                     <EnvTable v-if="model" :tr="model"/>
                   </div>
-                  <div class="comments-section">
-                    <div
-                      v-for="comment in model?.comments"
-                      :key="comment.id"
-                      class="comment-bubble"
-                    >
-                      <div class="comment-header">
-                        <span class="comment-user">{{ comment.user }}@{{ comment.host }}</span>
-                        <span class="comment-timestamp">{{ comment.timestamp }}</span>
-                      </div>
-                      <div class="comment-message">
-                        {{ comment.message }}
-                      </div>
-                    </div>
-                    <div class="comment-input-row">
-                      <input
-                        v-model="newComment"
-                        :disabled="sendingComment"
-                        class="comment-input"
-                        placeholder="Add a comment..."
-                        @keyup.enter="sendComment"
-                      />
-                      <button
-                        class="comment-send-btn"
-                        :disabled="sendingComment || !newComment.trim()"
-                        @click="sendComment"
-                      >
-                        <span v-if="!sendingComment">Send</span>
-                        <span v-else>...</span>
-                      </button>
-                    </div>
-                  </div>
+                  <CommentFeed
+                    v-if="model"
+                    :comments="model.comments"
+                    :pathParts="[repoName, lineName, modelNumString]"
+                    :onCommentSent="loadModelData"
+                  />
                 </div>
               </v-tab-item>
               <v-tab-item>
