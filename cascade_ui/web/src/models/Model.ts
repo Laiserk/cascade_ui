@@ -1,5 +1,6 @@
 import type {Metric} from "@/models/Metric";
 import {Traceable} from "@/models/Traceable";
+import {File} from "@/models/File";
 
 export class Model extends Traceable {
     slug: string;
@@ -7,8 +8,8 @@ export class Model extends Traceable {
     saved_at: string;
     params: object;
     metrics: Metric[];
-    artifacts: string[];
-    files: string[];
+    artifacts: File[];
+    files: File[];
 
     constructor(model: Model) {
         super(model);

@@ -29,9 +29,9 @@ from cascade.workspaces import Workspace
 from . import __version__
 from .models import (
     ConfigResponse,
-    Container,
     DatasetPathSpec,
     DatasetResponse,
+    File,
     Item,
     LinePathSpec,
     LineResponse,
@@ -39,6 +39,7 @@ from .models import (
     LogResponse,
     ModelPathSpec,
     ModelResponse,
+    RepoCard,
     RepoPathSpec,
     RepoResponse,
     VersionResponse,
@@ -78,15 +79,26 @@ class Server:
 
     def workspace(self) -> WorkspaceResponse:
         self._ws = Workspace(self._ws_name)
-        repo_names = self._ws.get_repo_names()
-        repo_lengths = [len(self._ws[name]) for name in repo_names]
+        ws_meta = self._ws.get_meta()
 
-        repos = [Container(name=name, len=length) for name, length in zip(repo_names, repo_lengths)]
+        repos = []
+        for name in self._ws.get_repo_names():
+            repo = self._ws[name]
+            meta = repo.get_meta()
+            card = RepoCard(name=name, len=len(repo), tags=meta[0].get("tags"))
+            repos.append(card)
 
-        return WorkspaceResponse(name=self._ws_name, len=len(repos), repos=repos)
+        return WorkspaceResponse(
+            name=self._ws_name,
+            len=len(repos),
+            repos=repos,
+            tags=ws_meta[0].get("tags"),
+            comments=ws_meta[0].get("comments"),
+        )
 
     def repo(self, path: RepoPathSpec) -> RepoResponse:
         r = self._ws[path.repo]
+        repo_meta = r.get_meta()
         names = r.get_line_names()
         lines = [r[line] for line in names]
 
@@ -106,12 +118,19 @@ class Server:
                 name=name,
                 len=len(line),
                 type=t,
+                tags=meta[0].get("tags"),
                 created_at=created_at,
                 updated_at=updated_at,
             )
             line_rows.append(row)
 
-        return RepoResponse(name=path.repo, len=len(lines), lines=line_rows)
+        return RepoResponse(
+            name=path.repo,
+            len=len(lines),
+            lines=line_rows,
+            tags=repo_meta[0].get("tags"),
+            comments=repo_meta[0].get("comments"),
+        )
 
     def _prepare_item_dict(self, meta: Dict[str, Any]) -> Dict[str, Any]:
         meta = meta[0]
@@ -167,6 +186,7 @@ class Server:
 
     def line(self, path: LinePathSpec) -> LineResponse:
         line = self._ws[path.repo][path.line]
+        line_meta = line.get_meta()
 
         items = []
         item_names = line.get_item_names()
@@ -189,15 +209,40 @@ class Server:
             name=path.line,
             len=len(line),
             type=CLS2TYPE[type(line)],
+            comments=line_meta[0].get("comments"),
+            tags=line_meta[0].get("tags"),
             items=items,
             item_fields=list(sorted(item_fields)),
             plot_fields=list(sorted(filter(self._filter_plot_fields, item_fields))),
         )
 
+    def _file_size_string(self, size_bytes: int) -> str:
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024**2:
+            return f"{size_bytes / 1024:.1f} KB"
+        elif size_bytes < 1024**3:
+            return f"{size_bytes / 1024**2:.1f} MB"
+        else:
+            return f"{size_bytes / 1024**3:.1f} GB"
+
     def model(self, path: ModelPathSpec) -> ModelResponse:
         line = self._ws[path.repo][path.line]
         meta = line.load_model_meta(path.num)
-        files = line.load_artifact_paths(path.num)
+        paths = line.load_artifact_paths(path.num)
+
+        files = []
+        artifacts = []
+        for key in paths:
+            for path in paths[key]:
+                if os.path.exists(path):
+                    size_bytes = os.path.getsize(path)
+                    size_str = self._file_size_string(size_bytes)
+                    file = File(name=path, size=size_str)
+                    if key == "artifacts":
+                        artifacts.append(file)
+                    else:
+                        files.append(file)
 
         return ModelResponse(
             slug=meta[0]["slug"],
@@ -213,8 +258,8 @@ class Server:
             tags=meta[0]["tags"],
             params=meta[0]["params"],
             metrics=meta[0]["metrics"],
-            artifacts=files["artifacts"],
-            files=files["files"],
+            artifacts=artifacts,
+            files=files,
             git_commit=meta[0].get("git_commit"),
             git_uncommitted_changes=meta[0].get("git_uncommitted_changes"),
         )

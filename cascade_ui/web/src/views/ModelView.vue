@@ -6,6 +6,7 @@ import GetModel from "@/components/GetModel";
 import GetWorkspace from "@/components/GetWorkspace";
 import LogView from "@/components/LogView.vue";
 import EnvTable from "@/components/EnvTable.vue";
+import TagsRow from "@/components/TagsRow.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {Model} from "@/models/Model";
@@ -118,19 +119,7 @@ function goToModel(modelNumString: string) {
           <div class="model-info">
             <p class="slug"> {{ model?.slug }}</p>
             <p class="text"> {{ model?.path }}</p>
-            <div class="tags-row" v-if="model?.tags && model.tags.length">
-              <v-chip
-                v-for="tag in model.tags"
-                :key="tag"
-                class="tag-chip"
-                :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
-                background="#D9D7DD"
-                text-color="#555"
-                outlined
-              >
-                {{ tag }}
-              </v-chip>
-            </div>
+            <TagsRow v-if="model" :tags="model.tags"/>
             <p class="text"> Created: {{ model?.created_at }}</p>
             <p class="text"> Saved: {{ model?.saved_at }}</p>
             <div style="margin-top: 20px;margin-bottom: 20px">
@@ -186,8 +175,8 @@ function goToModel(modelNumString: string) {
             <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
             <v-table v-if="model && model.artifacts && model.artifacts.length">
               <tbody>
-                <tr v-for="artifact in model.artifacts" :key="artifact">
-                  <td>{{ artifact }}</td>
+                <tr v-for="artifact in model.artifacts" :key="artifact.name">
+                  <td>{{ artifact.name }}</td>
                 </tr>
               </tbody>
             </v-table>
@@ -196,8 +185,9 @@ function goToModel(modelNumString: string) {
             <v-subheader style="margin-top: 32px;">FILES</v-subheader>
             <v-table v-if="model && model.files && model.files.length">
               <tbody>
-                <tr v-for="file in model.files" :key="file">
-                  <td>{{ file }}</td>
+                <tr v-for="file in model.files" :key="file.name">
+                  <td>{{ file.name }}</td>
+                  <td>{{ file.size }}</td>
                 </tr>
               </tbody>
             </v-table>
@@ -258,6 +248,8 @@ function goToModel(modelNumString: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .model-list-item {
   padding: 8px 12px;
@@ -275,7 +267,7 @@ function goToModel(modelNumString: string) {
 }
 .model-info {
   margin-top: 20px;
-  width: 60%;
+  width: 50%;
   margin-left: 0;
   margin-right: 0;
 }
@@ -286,6 +278,8 @@ function goToModel(modelNumString: string) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .slug {
   font-family: Roboto;

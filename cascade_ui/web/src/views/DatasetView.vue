@@ -173,6 +173,8 @@ function goToDataset(datasetVer: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .dataset-list-item {
   padding: 8px 12px;
@@ -201,6 +203,8 @@ function goToDataset(datasetVer: string) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .slug {
   font-family: Roboto;
