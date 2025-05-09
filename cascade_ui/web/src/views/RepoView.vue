@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
+import TagsRow from "@/components/TagsRow.vue"
 import GetRepo from "@/components/GetRepo";
 import GetWorkspace from "@/components/GetWorkspace";
+import {openLine, openWorkspace} from "@/components/Open";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
+import {LinePathSpec} from "@/models/PathSpecs";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
-import TagsRow from "@/components/TagsRow.vue"
 
 import { useRouter, useRoute } from 'vue-router'
 
@@ -18,18 +20,6 @@ const repoName = computed(() => route.params.repoName as string)
 
 const repo = ref<Repo | null>(null);
 const router = useRouter();
-
-function openLine(repoName: string, lineName: string, lineType: string) {
-  if (lineType === "model_line") {
-    router.push({ name: "model_line", params: { repoName, lineName } });
-  }
-  else if (lineType === "data_line") {
-    router.push({ name: "data_line", params: { repoName, lineName } });
-  }
-  else {
-    throw Error()
-  }
-}
 
 onMounted(async () => {
   const wsObj = await GetWorkspace();
@@ -42,7 +32,17 @@ onMounted(async () => {
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value);
+  const wsName = workspace.value.name;
+  return [
+    {
+      title: wsName,
+      to: { name: 'main' }
+    },
+    {
+      title: repoName.value,
+      disabled: true
+    }
+  ];
 });
 
 const lineHeaders = [
@@ -54,6 +54,24 @@ const lineHeaders = [
   { title: 'Updated', value: 'updated_at' },
 ];
 
+const processedLines = computed(() => {
+  if (!repo.value?.lines) return [];
+  return repo.value.lines.map(line => ({
+    ...line,
+    linePathSpec: new LinePathSpec({
+      repo: repoName.value,
+      line: line.name,
+      lineType: line.type,
+    }),
+  }));
+});
+
+function onBreadcrumbClick(e: any) {
+  const item = e?.item;
+  if (item?.to && !item.disabled) {
+    openWorkspace(router);
+  }
+}
 </script>
 
 <template>
@@ -73,11 +91,15 @@ const lineHeaders = [
     <div>
     <NavBar/>
     <div class="content">
-      <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
+      <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
       <div v-if="repo && repo.lines">
-        <v-data-table :headers="lineHeaders" :items="repo.lines" class="mt-4">
+        <v-data-table :headers="lineHeaders" :items="processedLines" class="mt-4">
           <template #item.name="{ item }">
-            <v-btn variant="text" style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;" @click="openLine(repoName, item.name, item.type)">
+            <v-btn
+              variant="text"
+              style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;"
+              @click="openLine(router, item.linePathSpec)"
+            >
               {{ item.name }}
             </v-btn>
           </template>

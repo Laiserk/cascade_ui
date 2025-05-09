@@ -23,8 +23,7 @@ onMounted(async () => {
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  // Split on both forward and backward slashes for cross-platform compatibility
-  return workspace.value.name.split(/[/\\]/).filter(Boolean);
+  return [workspace.value.name];
 });
 </script>
 <template>
