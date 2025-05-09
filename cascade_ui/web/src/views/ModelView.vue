@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetModel from "@/components/GetModel";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetModel from "@/utils/GetModel";
+import GetWorkspace from "@/utils/GetWorkspace";
 import LogView from "@/components/LogView.vue";
 import EnvTable from "@/components/EnvTable.vue";
 import TagsRow from "@/components/TagsRow.vue";
@@ -17,7 +17,7 @@ import { ModelPathSpec } from "@/models/PathSpecs";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
-import { openWorkspace, openRepo, openLine } from "@/components/Open";
+import { openWorkspace, openRepo, openLine } from "@/utils/Open";
 
 const route = useRoute()
 const router = useRouter()

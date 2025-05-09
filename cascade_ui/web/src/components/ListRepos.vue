@@ -2,7 +2,7 @@
 import { Workspace } from "@/models/Workspace";
 import TagsRow from "@/components/TagsRow.vue";
 import { useRouter } from "vue-router";
-import {openRepo} from "@/components/Open";
+import {openRepo} from "@/utils/Open";
 
 const props = defineProps<{ workspace: Workspace }>();
 const router = useRouter();

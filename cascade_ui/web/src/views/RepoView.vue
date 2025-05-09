@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import TagsRow from "@/components/TagsRow.vue"
-import GetRepo from "@/components/GetRepo";
-import GetWorkspace from "@/components/GetWorkspace";
-import {openLine, openWorkspace} from "@/components/Open";
+import GetRepo from "@/utils/GetRepo";
+import GetWorkspace from "@/utils/GetWorkspace";
+import {openLine, openWorkspace} from "@/utils/Open";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {LinePathSpec} from "@/models/PathSpecs";

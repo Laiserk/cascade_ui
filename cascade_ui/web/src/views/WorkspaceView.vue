@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import ListRepos from "@/components/ListRepos.vue";
-import GetWorkspace from "@/components/GetWorkspace";
-import GetVersionInfo from "@/components/GetVersionInfo"
+import GetWorkspace from "@/utils/GetWorkspace";
+import GetVersionInfo from "@/utils/GetVersionInfo"
 import { ref, onMounted, computed } from "vue";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";

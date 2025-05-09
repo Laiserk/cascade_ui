@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetDataset from "@/components/GetDataset";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetDataset from "@/utils/GetDataset";
+import GetWorkspace from "@/utils/GetWorkspace";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {Dataset} from "@/models/Dataset";
@@ -12,7 +12,7 @@ import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
-import { openWorkspace, openRepo, openLine } from "@/components/Open";
+import { openWorkspace, openRepo, openLine } from "@/utils/Open";
 
 const route = useRoute()
 const router = useRouter()

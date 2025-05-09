@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetWorkspace from "@/utils/GetWorkspace";
 import ListItems from "@/components/ListItems.vue";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
@@ -11,7 +11,7 @@ import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router';
-import { openWorkspace, openRepo } from "@/components/Open";
+import { openWorkspace, openRepo } from "@/utils/Open";
 
 const route = useRoute();
 const router = useRouter();

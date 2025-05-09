@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { ModelPathSpec } from '@/models/PathSpecs';
-import GetRunLog from '@/components/GetRunLog';
+import GetRunLog from '@/utils/GetRunLog';
 
 const props = defineProps<{ path: ModelPathSpec }>();
 
