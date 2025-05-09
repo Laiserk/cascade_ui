@@ -12,6 +12,7 @@ import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
+import { openWorkspace, openRepo, openLine } from "@/components/Open";
 
 const route = useRoute()
 const router = useRouter()
@@ -52,8 +53,38 @@ watch(
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value).concat(datasetVer.value);
+  const wsName = workspace.value.name;
+  return [
+    {
+      title: wsName,
+      to: { name: 'main' }
+    },
+    {
+      title: repoName.value,
+      to: { name: 'repo', params: { repoName: repoName.value } }
+    },
+    {
+      title: lineName.value,
+      to: { name: 'data_line', params: { repoName: repoName.value, lineName: lineName.value } }
+    },
+    {
+      title: datasetVer.value,
+      disabled: true
+    }
+  ];
 });
+
+function onBreadcrumbClick(e: any) {
+  const item = e?.item;
+  if (!item || item.disabled) return;
+  if (item.to?.name === 'main') {
+    openWorkspace(router);
+  } else if (item.to?.name === 'repo') {
+    openRepo(router, repoName.value);
+  } else if (item.to?.name === 'data_line') {
+    openLine(router, { repo: repoName.value, line: lineName.value, lineType: "data_line" });
+  }
+}
 
 function goToDataset(datasetVer: string) {
   router.push({
@@ -83,7 +114,7 @@ function goToDataset(datasetVer: string) {
     <NavBar/>
     <div>
       <div class="content">
-        <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
+        <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
         <div class="main-columns">
           <div class="dataset-list-column">
             <div class="dataset-list-header">Datasets</div>
