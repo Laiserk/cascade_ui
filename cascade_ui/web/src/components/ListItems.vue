@@ -77,8 +77,8 @@ function openModel(repoName: string, lineName: string, modelNumString: string) {
   router.push({ name: "model", params: { repoName, lineName, modelNumString } });
 }
 
-function openDataset(repoName: string, lineName: string, datasetName: string) {
-  router.push({ name: "dataset", params: { repoName, lineName, datasetName } });
+function openDataset(repoName: string, lineName: string, datasetVer: string) {
+  router.push({ name: "dataset", params: { repoName, lineName, datasetVer } });
 }
 
 function unsupportedLineType(type: string) {
