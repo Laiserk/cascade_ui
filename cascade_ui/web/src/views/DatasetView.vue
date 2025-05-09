@@ -174,7 +174,7 @@ function goToDataset(datasetVer: string) {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  width: 50%;
+  width: 100%;
 }
 .dataset-list-column {
   width: 10%;
