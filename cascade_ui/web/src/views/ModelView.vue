@@ -116,6 +116,30 @@ function goToModel(modelNumString: string) {
     }
   });
 }
+
+// Copy to clipboard logic
+const copyFeedback = ref("");
+function copySlug() {
+  if (model.value?.slug) {
+    navigator.clipboard.writeText(model.value.slug);
+    copyFeedback.value = "Copied";
+    setTimeout(() => {
+      copyFeedback.value = "";
+    }, 1200);
+  }
+}
+
+// Add copy for path
+const copyPathFeedback = ref("");
+function copyPath() {
+  if (model.value?.path) {
+    navigator.clipboard.writeText(model.value.path);
+    copyPathFeedback.value = "Copied!";
+    setTimeout(() => {
+      copyPathFeedback.value = "";
+    }, 1200);
+  }
+}
 </script>
 
 <template>
@@ -160,8 +184,48 @@ function goToModel(modelNumString: string) {
               <v-tab-item>
                 <div v-if="tab === 0" class="general-tab-flex">
                   <div class="model-info">
-                    <p class="slug"> {{ model?.slug }}</p>
-                    <p class="text"> {{ model?.path }}</p>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <p class="slug" style="margin: 0;">{{ model?.slug }}</p>
+                      <button
+                        v-if="model?.slug"
+                        @click="copySlug"
+                        title="Copy slug"
+                        class="copy-btn"
+                        style="background: none; border: none; cursor: pointer; padding: 0;"
+                      >
+                        <img
+                          src="@/assets/copy-icon.png"
+                          alt="Copy"
+                          style="width: 18px; height: 18px; display: block;"
+                        />
+                      </button>
+                      <span
+                        v-if="copyFeedback || true"
+                        class="copy-feedback"
+                        :class="{ visible: copyFeedback }"
+                      >{{ copyFeedback }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <p class="text" style="margin: 0;">{{ model?.path }}</p>
+                      <button
+                        v-if="model?.path"
+                        @click="copyPath"
+                        title="Copy path"
+                        class="copy-btn"
+                        style="background: none; border: none; cursor: pointer; padding: 0;"
+                      >
+                        <img
+                          src="@/assets/copy-icon.png"
+                          alt="Copy"
+                          style="width: 18px; height: 18px; display: block;"
+                        />
+                      </button>
+                      <span
+                        v-if="copyPathFeedback || true"
+                        class="copy-feedback"
+                        :class="{ visible: copyPathFeedback }"
+                      >{{ copyPathFeedback }}</span>
+                    </div>
                     <TagsRow v-if="model" :tags="model.tags"/>
                     <p class="text"> Created: {{ model?.created_at }}</p>
                     <p class="text"> Saved: {{ model?.saved_at }}</p>
@@ -338,5 +402,23 @@ function goToModel(modelNumString: string) {
   border-radius: 10px;
   align-items: center;
   display: flex;
+}
+.copy-btn {
+  font-size: 18px;
+  vertical-align: middle;
+}
+.copy-feedback {
+  font-size: 18px;
+  color: #db504a77;
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.35s;
+  min-width: 60px;
+  display: inline-block;
+  font-family: Roboto;
+  font-weight: bold;
+}
+.copy-feedback.visible {
+  opacity: 1;
 }
 </style>
