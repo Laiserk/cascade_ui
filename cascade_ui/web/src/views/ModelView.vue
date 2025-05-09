@@ -421,12 +421,12 @@ function goToModel(modelNumString: string) {
   padding: 8px 16px;
   border-radius: 8px;
   border: none;
-  background: #DB504A;
-  color: #fff;
+  background: #deb841;
+  color: #ffffff;
   font-weight: bold;
   font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 1s;
 }
 .comment-send-btn:disabled {
   background: #ccc;
