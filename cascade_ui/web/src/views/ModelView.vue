@@ -18,6 +18,7 @@ import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
+import CommentFeed from "@/components/CommentFeed.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -41,6 +42,8 @@ const modelPath = computed(() => {
   }
   return null;
 });
+
+const tab = ref(0);
 
 async function loadModelData() {
   const wsObj = await GetWorkspace();
@@ -147,100 +150,112 @@ function goToModel(modelNumString: string) {
               </div>
             </div>
           </div>
-          <div class="model-info">
-            <p class="slug"> {{ model?.slug }}</p>
-            <p class="text"> {{ model?.path }}</p>
-            <TagsRow v-if="model" :tags="model.tags"/>
-            <p class="text"> Created: {{ model?.created_at }}</p>
-            <p class="text"> Saved: {{ model?.saved_at }}</p>
-            <div style="margin-top: 20px;margin-bottom: 20px">
-              <p class="text"> {{ model?.description }}</p>
-            </div>
+          <div class="tabs-column">
+            <v-tabs v-model="tab" color="primary" grow>
+              <v-tab>General</v-tab>
+              <v-tab>Logs</v-tab>
+              <v-tab>Config</v-tab>
+            </v-tabs>
+            <v-tabs-items v-model="tab">
+              <v-tab-item>
+                <div v-if="tab === 0" class="general-tab-flex">
+                  <div class="model-info">
+                    <p class="slug"> {{ model?.slug }}</p>
+                    <p class="text"> {{ model?.path }}</p>
+                    <TagsRow v-if="model" :tags="model.tags"/>
+                    <p class="text"> Created: {{ model?.created_at }}</p>
+                    <p class="text"> Saved: {{ model?.saved_at }}</p>
+                    <div style="margin-top: 20px;margin-bottom: 20px">
+                      <p class="text"> {{ model?.description }}</p>
+                    </div>
 
-            <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
-            <v-table v-if="model && model.params && Object.keys(model.params).length">
-              <tbody>
-                <tr v-for="(value, key) in model.params" :key="key">
-                  <td><b>{{ key }}</b></td>
-                  <td>{{ typeof value === 'object' ? JSON.stringify(value) : String(value) }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
+                    <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
+                    <v-table v-if="model && model.params && Object.keys(model.params).length">
+                      <tbody>
+                        <tr v-for="(value, key) in model.params" :key="key">
+                          <td><b>{{ key }}</b></td>
+                          <td>{{ typeof value === 'object' ? JSON.stringify(value) : String(value) }}</td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">METRICS</v-subheader>
-            <v-table v-if="model && model.metrics && model.metrics.length">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Value</th>
-                  <th>Dataset</th>
-                  <th>Split</th>
-                  <th>Direction</th>
-                  <th>Interval</th>
-                  <th>Extra</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(metric, idx) in model.metrics" :key="idx">
-                  <td>{{ metric.name }}</td>
-                  <td>{{ metric.value }}</td>
-                  <td>{{ metric.dataset }}</td>
-                  <td>{{ metric.split }}</td>
-                  <td>{{ metric.direction }}</td>
-                  <td>
-                    <span v-if="metric.interval">
-                      [{{ metric.interval[0] }}, {{ metric.interval[1] }}]
-                    </span>
-                    <span v-else>-</span>
-                  </td>
-                  <td>
-                    <span v-if="metric.extra">{{ JSON.stringify(metric.extra) }}</span>
-                    <span v-else>-</span>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
+                    <v-subheader style="margin-top: 32px;">METRICS</v-subheader>
+                    <v-table v-if="model && model.metrics && model.metrics.length">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Value</th>
+                          <th>Dataset</th>
+                          <th>Split</th>
+                          <th>Direction</th>
+                          <th>Interval</th>
+                          <th>Extra</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(metric, idx) in model.metrics" :key="idx">
+                          <td>{{ metric.name }}</td>
+                          <td>{{ metric.value }}</td>
+                          <td>{{ metric.dataset }}</td>
+                          <td>{{ metric.split }}</td>
+                          <td>{{ metric.direction }}</td>
+                          <td>
+                            <span v-if="metric.interval">
+                              [{{ metric.interval[0] }}, {{ metric.interval[1] }}]
+                            </span>
+                            <span v-else>-</span>
+                          </td>
+                          <td>
+                            <span v-if="metric.extra">{{ JSON.stringify(metric.extra) }}</span>
+                            <span v-else>-</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
-            <v-table v-if="model && model.artifacts && model.artifacts.length">
-              <tbody>
-                <tr v-for="artifact in model.artifacts" :key="artifact.name">
-                  <td>{{ artifact.name }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
+                    <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
+                    <v-table v-if="model && model.artifacts && model.artifacts.length">
+                      <tbody>
+                        <tr v-for="artifact in model.artifacts" :key="artifact.name">
+                          <td>{{ artifact.name }}</td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">FILES</v-subheader>
-            <v-table v-if="model && model.files && model.files.length">
-              <tbody>
-                <tr v-for="file in model.files" :key="file.name">
-                  <td>{{ file.name }}</td>
-                  <td>{{ file.size }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
-            <EnvTable v-if="model" :tr="model"/>
-            <LogView v-if="modelPath" :path="modelPath" />
-            <ConfigView v-if="modelPath" :path="modelPath" />
-          </div>
-          <div class="comments-section">
-            <div
-              v-for="comment in model?.comments"
-              :key="comment.id"
-              class="comment-bubble"
-            >
-              <div class="comment-header">
-                <span class="comment-user">{{ comment.user }}@{{ comment.host }}</span>
-                <span class="comment-timestamp">{{ comment.timestamp }}</span>
-              </div>
-              <div class="comment-message">
-                {{ comment.message }}
-              </div>
-            </div>
+                    <v-subheader style="margin-top: 32px;">FILES</v-subheader>
+                    <v-table v-if="model && model.files && model.files.length">
+                      <tbody>
+                        <tr v-for="file in model.files" :key="file.name">
+                          <td>{{ file.name }}</td>
+                          <td>{{ file.size }}</td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
+                    <EnvTable v-if="model" :tr="model"/>
+                  </div>
+                  <CommentFeed
+                    v-if="model"
+                    :comments="model.comments"
+                    :pathParts="[repoName, lineName, modelNumString]"
+                    :onCommentSent="loadModelData"
+                  />
+                </div>
+              </v-tab-item>
+              <v-tab-item>
+                <div v-if="tab === 1">
+                  <LogView v-if="modelPath" :path="modelPath" />
+                </div>
+              </v-tab-item>
+              <v-tab-item>
+                <div v-if="tab === 2">
+                  <ConfigView v-if="modelPath" :path="modelPath" />
+                </div>
+              </v-tab-item>
+            </v-tabs-items>
           </div>
         </div>
       </div>
@@ -257,16 +272,20 @@ function goToModel(modelNumString: string) {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  width: 100%;
+  width: 50%;
 }
 .model-list-column {
-  width: 20%;
+  width: 10%;
   min-width: 120px;
   margin-top: 20px;
   margin-right: 40px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+.tabs-column {
+  flex: 1;
+  margin-top: 20px;
 }
 .model-list-header {
   font-family: Roboto;
@@ -296,32 +315,18 @@ function goToModel(modelNumString: string) {
   background: #D9D7DD;
   color: #555;
 }
+.general-tab-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100%;
+}
 .model-info {
   margin-top: 20px;
-  width: 50%;
+  flex: 0 1 70%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
-}
-.comments-section {
-  flex: 1;
-  margin-top: 20px;
-  margin-left: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 1000px;
-  overflow-y: auto;
-}
-.slug {
-  font-family: Roboto;
-  font-weight: bold;
-  font-size: 24px;
-  color: #DB504A;
-}
-.text {
-  font-family: Roboto;
-  font-size: 18px;
-  color: #898989;
 }
 .tags-row {
   display: flex;
@@ -333,34 +338,5 @@ function goToModel(modelNumString: string) {
   border-radius: 10px;
   align-items: center;
   display: flex;
-}
-.comment-bubble {
-  background: #f4f4f4;
-  border-radius: 12px;
-  padding: 16px;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #888;
-}
-.comment-user {
-  font-weight: bold;
-}
-.comment-timestamp {
-  font-size: 13px;
-  color: #aaa;
-}
-.comment-message {
-  font-size: 16px;
-  color: #222;
-  word-break: break-word;
 }
 </style>

@@ -4,6 +4,7 @@ import GetRepo from "@/utils/GetRepo";
 import GetLine from "@/utils/GetLine";
 import GetWorkspace from "@/utils/GetWorkspace";
 import ListItems from "@/components/ListItems.vue";
+import CommentFeed from "@/components/CommentFeed.vue";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {ModelLine} from "@/models/ModelLine";
@@ -21,8 +22,9 @@ const lineName = computed(() => route.params.lineName as string);
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
 const line = ref<ModelLine | null>(null);
+const tab = ref(0);
 
-onMounted(async () => {
+async function loadLineData() {
   const wsObj = await GetWorkspace();
   workspace.value = wsObj ? new WorkspaceClass(wsObj) : null;
   if (workspace.value && repoName.value) {
@@ -36,7 +38,9 @@ onMounted(async () => {
       line.value = new ModelLine(lineObj);
     }
   }
-});
+}
+
+onMounted(loadLineData);
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
@@ -69,11 +73,31 @@ function onBreadcrumbClick(e: any) {
 </script>
 
 <template>
-  <NavBar/>
   <div>
+    <NavBar/>
     <div class="content">
       <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
-      <ListItems v-if="line" :line="line"/>
+      <v-tabs v-model="tab" color="primary" grow>
+        <v-tab>General</v-tab>
+        <v-tab>Comments</v-tab>
+      </v-tabs>
+      <v-tabs-items v-model="tab">
+        <v-tab-item>
+          <div v-if="tab === 0">
+            <ListItems v-if="line" :line="line"/>
+          </div>
+        </v-tab-item>
+        <v-tab-item>
+          <div v-if="tab === 1">
+            <CommentFeed
+              v-if="line"
+              :comments="line.comments"
+              :pathParts="[repoName, lineName]"
+              :onCommentSent="loadLineData"
+            />
+          </div>
+        </v-tab-item>
+      </v-tabs-items>
     </div>
   </div>
 </template>

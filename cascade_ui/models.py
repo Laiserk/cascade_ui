@@ -135,3 +135,8 @@ class LogResponse(pydantic.BaseModel):
 class ConfigResponse(pydantic.BaseModel):
     config: Optional[Dict[str, Any]]
     overrides: Optional[Dict[str, Any]]
+
+
+class AddCommentRequest(pydantic.BaseModel):
+    comment: str
+    path_parts: List[str]
