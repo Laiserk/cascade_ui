@@ -164,10 +164,10 @@ function copyPath() {
             </div>
           </div>
           <div class="tabs-column">
-            <v-tabs v-model="tab" color="primary">
-              <v-tab>General</v-tab>
-              <v-tab>Logs</v-tab>
-              <v-tab>Config</v-tab>
+            <v-tabs v-model="tab" class="custom-tabs">
+              <v-tab class="custom-tab">General</v-tab>
+              <v-tab class="custom-tab">Logs</v-tab>
+              <v-tab class="custom-tab">Config</v-tab>
             </v-tabs>
             <v-tabs-items v-model="tab">
               <v-tab-item>
@@ -410,5 +410,21 @@ function copyPath() {
 }
 .copy-feedback.visible {
   opacity: 1;
+}
+.custom-tabs {
+  background-color: #F5E6B2;
+  border-radius: 8px;
+}
+
+.custom-tab {
+  color: #DEB841 !important;
+  background-color: #FFFDF5 !important;
+  transition: background 0.2s, color 0.2s;
+}
+
+.custom-tab.v-tab--active,
+.custom-tab:hover {
+  background-color: #E8D496 !important;
+  color: #fff !important;
 }
 </style>

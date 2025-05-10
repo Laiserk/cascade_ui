@@ -84,9 +84,9 @@ function onBreadcrumbClick(e: any) {
     <NavBar/>
     <div class="content">
       <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
-      <v-tabs v-model="tab" color="primary" grow>
-        <v-tab>General</v-tab>
-        <v-tab>Comments</v-tab>
+      <v-tabs v-model="tab" class="custom-tabs" grow>
+        <v-tab class="custom-tab">General</v-tab>
+        <v-tab class="custom-tab">Comments</v-tab>
       </v-tabs>
       <v-tabs-items v-model="tab">
         <v-tab-item>
@@ -128,5 +128,22 @@ function onBreadcrumbClick(e: any) {
 .content {
   margin-left: 60px;
   margin-right: 60px;
+}
+
+.custom-tabs {
+  background-color: #F5E6B2;
+  border-radius: 8px;
+}
+
+.custom-tab {
+  color: #DEB841 !important;
+  background-color: #FFFDF5 !important;
+  transition: background 0.2s, color 0.2s;
+}
+
+.custom-tab.v-tab--active,
+.custom-tab:hover {
+  background-color: #E8D496 !important;
+  color: #fff !important;
 }
 </style>
