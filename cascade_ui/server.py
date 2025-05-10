@@ -182,10 +182,18 @@ class Server:
             item = {}
             flat = self._prepare_item_dict(meta)
             for key in item_fields:
-                value = flat.get(key)
+                if key == "num":
+                    value = i
+                else:
+                    value = flat.get(key)
                 item[key] = value
             items.append(item)
         return items
+
+    def _filter_plot_fields(self, field_name):
+        if field_name.startswith(("metrics", "params")):
+            return True
+        return False
 
     def line(self, path: LinePathSpec) -> LineResponse:
         line = self._ws[path.repo][path.line]
@@ -216,6 +224,7 @@ class Server:
             tags=line_meta[0].get("tags"),
             items=items,
             item_fields=list(sorted(item_fields)),
+            plot_fields=list(sorted(filter(self._filter_plot_fields, item_fields))),
         )
 
     def _file_size_string(self, size_bytes: int) -> str:

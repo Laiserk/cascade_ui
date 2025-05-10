@@ -63,6 +63,7 @@ class LineResponse(Traceable, Container):
     type: Literal["model_line", "data_line"]
     items: List[Item]
     item_fields: List[str]
+    plot_fields: List[str]
 
 
 class ModelPathSpec(pydantic.BaseModel):

@@ -5,6 +5,7 @@ import GetLine from "@/utils/GetLine";
 import GetWorkspace from "@/utils/GetWorkspace";
 import ListItems from "@/components/ListItems.vue";
 import CommentFeed from "@/components/CommentFeed.vue";
+import PlotsView from "@/components/PlotsView.vue";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {ModelLine} from "@/models/ModelLine";
@@ -13,11 +14,22 @@ import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router';
 import { openWorkspace, openRepo } from "@/utils/Open";
+import { LinePathSpec } from "@/models/PathSpecs";
 
 const route = useRoute();
 const router = useRouter();
 const repoName = computed(() => route.params.repoName as string);
 const lineName = computed(() => route.params.lineName as string);
+
+const linePath = computed(() => {
+  if (repo.value && line.value) {
+    return new LinePathSpec({
+      repo: repo.value.name,
+      line: line.value.name,
+    });
+  }
+  return null;
+});
 
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);

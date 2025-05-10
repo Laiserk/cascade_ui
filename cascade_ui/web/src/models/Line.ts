@@ -26,6 +26,7 @@ export class Line {
     item_fields: string[];
     tags: string[];
     comments: ItemComment[];
+    plot_fields: string[];
 
     constructor(line: Line) {
         this.name = line.name;
@@ -37,5 +38,6 @@ export class Line {
         this.item_fields = line.item_fields;
         this.tags = line.tags;
         this.comments = line.comments;
+        this.plot_fields = line.plot_fields;
     }
 }
