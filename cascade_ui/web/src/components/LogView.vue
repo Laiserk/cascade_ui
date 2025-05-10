@@ -38,7 +38,7 @@ watch(() => props.path, fetchLog, { immediate: true });
         <template #default="{ item, index }">
           <div class="d-flex font-mono log-line">
             <span class="log-linenum">{{ index + 1 }}</span>
-            <span class="log-content">{{ item }}</span>
+            <span>{{ item }}</span>
           </div>
         </template>
       </v-virtual-scroll>
@@ -50,6 +50,7 @@ watch(() => props.path, fetchLog, { immediate: true });
 .log-card {
   display: flex;
   flex-direction: column;
+  max-width: 1200px;
 }
 .log-card-text {
   overflow: auto;
@@ -62,11 +63,12 @@ watch(() => props.path, fetchLog, { immediate: true });
   color: #2f6f8d;
   white-space: pre;
   overflow-x: auto;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
 }
 .log-line {
   min-height: 22px;
+  display: flex;
+  align-items: flex-start;
 }
 .log-linenum {
   display: inline-block;
@@ -76,10 +78,5 @@ watch(() => props.path, fetchLog, { immediate: true });
   margin-right: 1em;
   user-select: none;
   flex-shrink: 0;
-}
-.log-content {
-  flex: 1;
-  white-space: pre;
-  overflow-x: auto;
 }
 </style>
