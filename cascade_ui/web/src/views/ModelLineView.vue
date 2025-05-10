@@ -26,6 +26,7 @@ const linePath = computed(() => {
     return new LinePathSpec({
       repo: repo.value.name,
       line: line.value.name,
+      lineType: line.value.type,
     });
   }
   return null;
@@ -92,6 +93,7 @@ function onBreadcrumbClick(e: any) {
       <v-tabs v-model="tab" color="primary" grow>
         <v-tab>General</v-tab>
         <v-tab>Comments</v-tab>
+        <v-tab>Plots</v-tab>
       </v-tabs>
       <v-tabs-items v-model="tab">
         <v-tab-item>
@@ -106,6 +108,15 @@ function onBreadcrumbClick(e: any) {
               :comments="line.comments"
               :pathParts="[repoName, lineName]"
               :onCommentSent="loadLineData"
+            />
+          </div>
+        </v-tab-item>
+        <v-tab-item>
+          <div v-if="tab === 2">
+            <PlotsView
+              v-if="line && linePath"
+              :line="line"
+              :linePath="linePath"
             />
           </div>
         </v-tab-item>

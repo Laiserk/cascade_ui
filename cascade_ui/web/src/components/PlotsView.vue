@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { LinePathSpec } from "@/models/PathSpecs";
-import { useRouter, useRoute } from 'vue-router'
 import * as echarts from "echarts";
 import { fetchLineItems } from "@/components/fetchLineItems";
 
