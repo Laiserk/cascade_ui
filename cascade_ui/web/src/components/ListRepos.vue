@@ -2,13 +2,11 @@
 import { Workspace } from "@/models/Workspace";
 import TagsRow from "@/components/TagsRow.vue";
 import { useRouter } from "vue-router";
+import {openRepo} from "@/utils/Open";
 
 const props = defineProps<{ workspace: Workspace }>();
 const router = useRouter();
 
-function openRepo(repoName: string) {
-  router.push({ name: "repo", params: { repoName } });
-}
 </script>
 
 <template>
@@ -30,7 +28,7 @@ function openRepo(repoName: string) {
           <v-btn
             style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;"
             text="OPEN"
-            @click="openRepo(repo.name)"
+            @click="openRepo(router, repo.name)"
           >
           </v-btn>
         </v-card-actions>

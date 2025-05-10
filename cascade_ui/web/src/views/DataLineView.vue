@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetWorkspace from "@/utils/GetWorkspace";
 import ListItems from "@/components/ListItems.vue";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
@@ -10,11 +10,13 @@ import {DataLine} from "@/models/DataLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router';
+import { openWorkspace, openRepo } from "@/utils/Open";
 
-const route = useRoute()
-const repoName = computed(() => route.params.repoName as string)
-const lineName = computed(() => route.params.lineName as string)
+const route = useRoute();
+const router = useRouter();
+const repoName = computed(() => route.params.repoName as string);
+const lineName = computed(() => route.params.lineName as string);
 
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
@@ -34,21 +36,43 @@ onMounted(async () => {
       line.value = new DataLine(lineObj);
     }
   }
-}
-);
+});
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value);
+  const wsName = workspace.value.name;
+  return [
+    {
+      title: wsName,
+      to: { name: 'main' }
+    },
+    {
+      title: repoName.value,
+      to: { name: 'repo', params: { repoName: repoName.value } }
+    },
+    {
+      title: lineName.value,
+      disabled: true
+    }
+  ];
 });
 
+function onBreadcrumbClick(e: any) {
+  const item = e?.item;
+  if (!item || item.disabled) return;
+  if (item.to?.name === 'main') {
+    openWorkspace(router);
+  } else if (item.to?.name === 'repo') {
+    openRepo(router, repoName.value);
+  }
+}
 </script>
 
 <template>
   <NavBar/>
   <div>
     <div class="content">
-      <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
+      <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
       <ListItems v-if="line" :line="line"/>
     </div>
   </div>

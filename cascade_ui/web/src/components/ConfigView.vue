@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
 import { ModelPathSpec } from '@/models/PathSpecs';
-import GetRunConfig from '@/components/GetRunConfig';
+import GetRunConfig from '@/utils/GetRunConfig';
 import { ConfigResponse } from '@/models/ConfigResponse';
 
 const props = defineProps<{ path: ModelPathSpec }>();

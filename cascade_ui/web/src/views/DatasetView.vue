@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetDataset from "@/components/GetDataset";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetDataset from "@/utils/GetDataset";
+import GetWorkspace from "@/utils/GetWorkspace";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {Dataset} from "@/models/Dataset";
@@ -12,6 +12,8 @@ import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
+import { openWorkspace, openRepo, openLine } from "@/utils/Open";
+import CommentFeed from "@/components/CommentFeed.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -52,8 +54,38 @@ watch(
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value).concat(datasetVer.value);
+  const wsName = workspace.value.name;
+  return [
+    {
+      title: wsName,
+      to: { name: 'main' }
+    },
+    {
+      title: repoName.value,
+      to: { name: 'repo', params: { repoName: repoName.value } }
+    },
+    {
+      title: lineName.value,
+      to: { name: 'data_line', params: { repoName: repoName.value, lineName: lineName.value } }
+    },
+    {
+      title: datasetVer.value,
+      disabled: true
+    }
+  ];
 });
+
+function onBreadcrumbClick(e: any) {
+  const item = e?.item;
+  if (!item || item.disabled) return;
+  if (item.to?.name === 'main') {
+    openWorkspace(router);
+  } else if (item.to?.name === 'repo') {
+    openRepo(router, repoName.value);
+  } else if (item.to?.name === 'data_line') {
+    openLine(router, { repo: repoName.value, line: lineName.value, lineType: "data_line" });
+  }
+}
 
 function goToDataset(datasetVer: string) {
   router.push({
@@ -83,7 +115,7 @@ function goToDataset(datasetVer: string) {
     <NavBar/>
     <div>
       <div class="content">
-        <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
+        <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
         <div class="main-columns">
           <div class="dataset-list-column">
             <div class="dataset-list-header">Datasets</div>
@@ -121,21 +153,12 @@ function goToDataset(datasetVer: string) {
             </div>
             <EnvTable v-if="dataset" :tr="dataset"/>
           </div>
-          <div class="comments-section">
-            <div
-              v-for="comment in dataset?.comments"
-              :key="comment.id"
-              class="comment-bubble"
-            >
-              <div class="comment-header">
-                <span class="comment-user">{{ comment.user }}@{{ comment.host }}</span>
-                <span class="comment-timestamp">{{ comment.timestamp }}</span>
-              </div>
-              <div class="comment-message">
-                {{ comment.message }}
-              </div>
-            </div>
-          </div>
+          <CommentFeed
+            v-if="dataset"
+            :comments="dataset.comments"
+            :pathParts="[repoName, lineName, datasetVer]"
+            :onCommentSent="loadDatasetData"
+          />
         </div>
       </div>
     </div>
@@ -154,7 +177,7 @@ function goToDataset(datasetVer: string) {
   width: 100%;
 }
 .dataset-list-column {
-  width: 20%;
+  width: 10%;
   min-width: 120px;
   margin-top: 20px;
   margin-right: 40px;
@@ -192,19 +215,10 @@ function goToDataset(datasetVer: string) {
 }
 .dataset-info {
   margin-top: 20px;
-  width: 60%;
+  flex: 0 1 70%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
-}
-.comments-section {
-  flex: 1;
-  margin-top: 20px;
-  margin-left: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 1000px;
-  overflow-y: auto;
 }
 .slug {
   font-family: Roboto;
@@ -227,34 +241,5 @@ function goToDataset(datasetVer: string) {
   border-radius: 10px;
   align-items: center;
   display: flex;
-}
-.comment-bubble {
-  background: #f4f4f4;
-  border-radius: 12px;
-  padding: 16px;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #888;
-}
-.comment-user {
-  font-weight: bold;
-}
-.comment-timestamp {
-  font-size: 13px;
-  color: #aaa;
-}
-.comment-message {
-  font-size: 16px;
-  color: #222;
-  word-break: break-word;
 }
 </style>
