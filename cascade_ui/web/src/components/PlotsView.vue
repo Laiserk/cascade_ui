@@ -7,11 +7,11 @@ import { fetchLineItems } from "@/components/fetchLineItems";
 const props = defineProps<{ line: any, linePath: LinePathSpec }>();
 
 const selectedField = ref<string>("");
-const chartData = ref<{ nums: number[], values: number[] }>({ nums: [], values: [] });
+const chartData = ref<{ nums: number[], values: number[], slugs: string[] }>({ nums: [], values: [], slugs: [] });
 const chartRef = ref<HTMLDivElement | null>(null);
 
 const plotFields = computed(() => props.line?.plot_fields || []);
-const defaultFields = computed(() => ["num", selectedField.value].filter(Boolean));
+const defaultFields = computed(() => ["num", "slug", selectedField.value].filter(Boolean));
 
 async function fetchData() {
   if (!selectedField.value || !props.linePath) return;
@@ -19,13 +19,14 @@ async function fetchData() {
   await fetchLineItems(
     props.linePath.repo,
     props.linePath.line,
-    [selectedField.value, "num"],
+    [selectedField.value, "num", "slug"],
     props.line,
     defaultFields.value
   );
   const items = props.line.items || [];
   chartData.value.nums = items.map((item: any) => item.num);
   chartData.value.values = items.map((item: any) => item[selectedField.value]);
+  chartData.value.slugs = items.map((item: any) => item.slug);
 }
 
 watch(selectedField, fetchData, { immediate: true });
@@ -64,7 +65,15 @@ watch(chartData, () => {
       smooth: false
     }],
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const idx = params[0]?.dataIndex;
+        const num = chartData.value.nums[idx];
+        const val = chartData.value.values[idx];
+        const slug = chartData.value.slugs[idx];
+        const numStr = typeof num === "number" ? String(num).padStart(5, "0") : num;
+        return `Num: ${numStr}<br/>Slug: ${slug}<br/>${selectedField.value}: ${val}`;
+      }
     }
   });
 }, { deep: true });
