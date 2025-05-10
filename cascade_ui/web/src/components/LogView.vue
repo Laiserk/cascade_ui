@@ -24,14 +24,14 @@ watch(() => props.path, fetchLog, { immediate: true });
 
 <template>
   <v-subheader style="margin-top: 24px; margin-bottom: 24px">LOGS</v-subheader>
-  <v-card v-if="props.path" style="height: 800px; overflow: auto;">
+  <v-card v-if="props.path" class="log-card">
     <v-divider />
-    <v-card-text class="pa-0" style="height: 750px; overflow: auto;">
+    <v-card-text class="pa-0 log-card-text">
       <v-progress-linear v-if="loading" indeterminate color="primary" />
       <v-virtual-scroll
         v-else
         :items="logLines"
-        height="750"
+        height="600"
         item-height="22"
         class="log-scroll"
       >
@@ -47,6 +47,15 @@ watch(() => props.path, fetchLog, { immediate: true });
 </template>
 
 <style scoped>
+.log-card {
+  display: flex;
+  flex-direction: column;
+}
+.log-card-text {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
 .log-scroll {
   font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
   background: #f3f3f4;
@@ -54,6 +63,7 @@ watch(() => props.path, fetchLog, { immediate: true });
   white-space: pre;
   overflow-x: auto;
   display: flex;
+  flex-direction: column;
 }
 .log-line {
   min-height: 22px;

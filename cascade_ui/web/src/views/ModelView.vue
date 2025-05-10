@@ -143,18 +143,7 @@ function copyPath() {
 </script>
 
 <template>
-  <head>
-    <meta charset="utf-8"/>
-    <title>List of experiments</title>
-    <link rel="icon" href="/logo.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-          rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-        rel="stylesheet">
-  </head>
-
-  <body>
+  <div>
     <NavBar/>
     <div>
       <div class="content">
@@ -175,7 +164,7 @@ function copyPath() {
             </div>
           </div>
           <div class="tabs-column">
-            <v-tabs v-model="tab" color="primary" grow>
+            <v-tabs v-model="tab" color="primary">
               <v-tab>General</v-tab>
               <v-tab>Logs</v-tab>
               <v-tab>Config</v-tab>
@@ -324,19 +313,20 @@ function copyPath() {
         </div>
       </div>
     </div>
-  </body>
+  </div>
 </template>
 
 <style>
 .content {
   margin-left: 60px;
   margin-right: 60px;
+  max-width: 1600px;
 }
 .main-columns {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  width: 50%;
+  width: 100%;
 }
 .model-list-column {
   width: 10%;
