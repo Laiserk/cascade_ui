@@ -140,6 +140,45 @@ function copyPath() {
     }, 1200);
   }
 }
+
+// --- Add composable for compare buffer ---
+function useCompareBuffer() {
+  const KEY = "cascade_compare_models";
+  const buffer = ref<string[]>([]);
+
+  function load() {
+    const raw = localStorage.getItem(KEY);
+    buffer.value = raw ? JSON.parse(raw) : [];
+  }
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(buffer.value));
+  }
+  function add(path: string) {
+    load();
+    if (buffer.value.includes(path)) return;
+    if (buffer.value.length < 2) {
+      buffer.value.push(path);
+    } else {
+      buffer.value = [buffer.value[1], path];
+    }
+    save();
+  }
+  function remove(path: string) {
+    load();
+    buffer.value = buffer.value.filter(p => p !== path);
+    save();
+  }
+  function clear() {
+    buffer.value = [];
+    save();
+  }
+  load();
+  return { buffer, add, remove, clear, load };
+}
+
+const compareBuffer = useCompareBuffer();
+
+const modelComparePath = computed(() => model.value?.path || "");
 </script>
 
 <template>
@@ -221,6 +260,35 @@ function copyPath() {
                     <div style="margin-top: 20px;margin-bottom: 20px">
                       <p class="text"> {{ model?.description }}</p>
                     </div>
+
+                    <!-- Add to compare button START -->
+                    <div style="margin-bottom: 16px;">
+                      <v-btn
+                        v-if="modelComparePath"
+                        color="primary"
+                        variant="outlined"
+                        @click="
+                          compareBuffer.buffer.value.includes(modelComparePath)
+                            ? compareBuffer.remove(modelComparePath)
+                            : compareBuffer.add(modelComparePath)
+                        "
+                        style="margin-bottom: 8px;"
+                      >
+                        <template v-if="compareBuffer.buffer.value.includes(modelComparePath)">
+                          Added to compare
+                        </template>
+                        <template v-else>
+                          Add to compare
+                        </template>
+                      </v-btn>
+                      <!-- <span v-if="compareBuffer.buffer.value.length > 0" style="margin-left: 12px; color: #888;">
+                        Compare buffer:
+                        <span v-for="(p, idx) in compareBuffer.buffer.value" :key="String(p)" style="margin-right: 8px;">
+                          <code>{{ p }}</code>
+                        </span>
+                      </span> -->
+                    </div>
+                    <!-- Add to compare button END -->
 
                     <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
                     <v-table v-if="model && model.params && Object.keys(model.params).length">
