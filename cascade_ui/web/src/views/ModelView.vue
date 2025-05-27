@@ -204,30 +204,7 @@ function getCompareBtnStyle(slotIdx: number) {
     <div>
       <div class="content">
         <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
-        <div class="main-columns">
-          <div class="model-list-column">
-            <div class="model-list-header">Models</div>
-            <div v-if="line?.items && line.items.length" class="model-list">
-              <div
-                v-for="(m, idx) in line.items"
-                :key="idx"
-                class="model-list-item"
-                :class="{ active: m.name === modelNumString }"
-                @click="goToModel(m.name)"
-              >
-                {{ m.name }}
-              </div>
-            </div>
-          </div>
-          <div class="tabs-column">
-            <v-tabs v-model="tab" class="custom-tabs">
-              <v-tab class="custom-tab">General</v-tab>
-              <v-tab class="custom-tab">Logs</v-tab>
-              <v-tab class="custom-tab">Config</v-tab>
-            </v-tabs>
-            <v-tabs-items v-model="tab">
-              <v-tab-item>
-                <div v-if="tab === 0" class="general-tab-flex">
+
                   <!-- Compare button group moved above columns, full width -->
                   <div class="compare-btn-group-row">
                     <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end;">
@@ -287,6 +264,31 @@ function getCompareBtnStyle(slotIdx: number) {
                       </v-btn>
                     </div>
                   </div>
+
+        <div class="main-columns">
+          <div class="model-list-column">
+            <div class="model-list-header">Models</div>
+            <div v-if="line?.items && line.items.length" class="model-list">
+              <div
+                v-for="(m, idx) in line.items"
+                :key="idx"
+                class="model-list-item"
+                :class="{ active: m.name === modelNumString }"
+                @click="goToModel(m.name)"
+              >
+                {{ m.name }}
+              </div>
+            </div>
+          </div>
+          <div class="tabs-column">
+            <v-tabs v-model="tab" class="custom-tabs">
+              <v-tab class="custom-tab">General</v-tab>
+              <v-tab class="custom-tab">Logs</v-tab>
+              <v-tab class="custom-tab">Config</v-tab>
+            </v-tabs>
+            <v-tabs-items v-model="tab">
+              <v-tab-item>
+                <div v-if="tab === 0" class="general-tab-flex">
                   <!-- Main content columns -->
                   <div class="general-tab-columns">
                     <div class="model-info">
