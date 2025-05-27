@@ -173,7 +173,7 @@ function useCompareBuffer() {
     save();
   }
   load();
-  return { buffer, add, remove, clear, load };
+  return { buffer, add, remove, clear, load, save };
 }
 
 const compareBuffer = useCompareBuffer();
@@ -261,34 +261,88 @@ const modelComparePath = computed(() => model.value?.path || "");
                       <p class="text"> {{ model?.description }}</p>
                     </div>
 
-                    <!-- Add to compare button START -->
+                    <!-- Compare button group START -->
                     <div style="margin-bottom: 16px;">
-                      <v-btn
-                        v-if="modelComparePath"
-                        color="primary"
-                        variant="outlined"
-                        @click="
-                          compareBuffer.buffer.value.includes(modelComparePath)
-                            ? compareBuffer.remove(modelComparePath)
-                            : compareBuffer.add(modelComparePath)
-                        "
-                        style="margin-bottom: 8px;"
-                      >
-                        <template v-if="compareBuffer.buffer.value.includes(modelComparePath)">
-                          Added to compare
-                        </template>
-                        <template v-else>
-                          Add to compare
-                        </template>
-                      </v-btn>
-                      <!-- <span v-if="compareBuffer.buffer.value.length > 0" style="margin-left: 12px; color: #888;">
-                        Compare buffer:
-                        <span v-for="(p, idx) in compareBuffer.buffer.value" :key="String(p)" style="margin-right: 8px;">
-                          <code>{{ p }}</code>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <!-- Button for slot 1 -->
+                        <v-btn
+                          v-if="modelComparePath"
+                          :disabled="compareBuffer.buffer.value[0] !== undefined && compareBuffer.buffer.value[0] !== modelComparePath"
+                          :style="{
+                            minWidth: '40px',
+                            marginBottom: '8px',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            background: (compareBuffer.buffer.value[0] !== undefined && compareBuffer.buffer.value[0] !== modelComparePath)
+                              ? '#ccc'
+                              : (compareBuffer.buffer.value[0] === modelComparePath ? '#DEB841' : '#E8D496'),
+                            color: '#fff',
+                            border: 'none',
+                            opacity: compareBuffer.buffer.value[0] !== undefined && compareBuffer.buffer.value[0] !== modelComparePath ? 0.5 : 1
+                          }"
+                          variant="outlined"
+                          @click="
+                            compareBuffer.buffer.value[0] === modelComparePath
+                              ? compareBuffer.remove(modelComparePath)
+                              : (
+                                  compareBuffer.buffer.value[0] === undefined
+                                    ? (compareBuffer.buffer.value[0] = modelComparePath, compareBuffer.save())
+                                    : null
+                                )
+                          "
+                        >
+                          1
+                        </v-btn>
+                        <!-- Arrow -->
+                        <span style="font-size: 22px; color: #888;">&#8594;</span>
+                        <!-- Button for slot 2 -->
+                        <v-btn
+                          v-if="modelComparePath"
+                          :disabled="compareBuffer.buffer.value[1] !== undefined && compareBuffer.buffer.value[1] !== modelComparePath"
+                          :style="{
+                            minWidth: '40px',
+                            marginBottom: '8px',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            background: (compareBuffer.buffer.value[1] !== undefined && compareBuffer.buffer.value[1] !== modelComparePath)
+                              ? '#ccc'
+                              : (compareBuffer.buffer.value[1] === modelComparePath ? '#DEB841' : '#E8D496'),
+                            color: '#fff',
+                            border: 'none',
+                            opacity: compareBuffer.buffer.value[1] !== undefined && compareBuffer.buffer.value[1] !== modelComparePath ? 0.5 : 1
+                          }"
+                          variant="outlined"
+                          @click="
+                            compareBuffer.buffer.value[1] === modelComparePath
+                              ? compareBuffer.remove(modelComparePath)
+                              : (
+                                  compareBuffer.buffer.value[1] === undefined
+                                    ? (compareBuffer.buffer.value[1] = modelComparePath, compareBuffer.save())
+                                    : null
+                                )
+                          "
+                        >
+                          2
+                        </v-btn>
+                        <!-- Compare main button -->
+                        <v-btn
+                          color="primary"
+                          :disabled="!(compareBuffer.buffer.value[0] && compareBuffer.buffer.value[1])"
+                          style="margin-left: 16px; background: #DEB841; color: #fff; font-weight: bold;"
+                        >
+                          Compare
+                        </v-btn>
+                        <!-- Show buffer state for clarity (optional, can remove) -->
+                        <span v-if="compareBuffer.buffer.value.length > 0" style="margin-left: 12px; color: #888;">
+                          <span v-for="(p, idx) in compareBuffer.buffer.value" :key="String(p)" style="margin-right: 8px;">
+                            <code>{{ idx + 1 }}: {{ p }}</code>
+                          </span>
                         </span>
-                      </span> -->
+                      </div>
                     </div>
-                    <!-- Add to compare button END -->
+                    <!-- Compare button group END -->
 
                     <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
                     <v-table v-if="model && model.params && Object.keys(model.params).length">
