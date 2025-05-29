@@ -19,6 +19,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
 import CommentFeed from "@/components/CommentFeed.vue";
+import { VIcon } from 'vuetify/components';
 
 const route = useRoute()
 const router = useRouter()
@@ -190,7 +191,7 @@ function getCompareBtnStyle(slotIdx: number) {
     borderRadius: '50%',
     width: '40px',
     height: '40px',
-    background: isActive ? '#deb841' : '#ccc',
+    background: isActive ? '#db5041' : '#ccc',
     color: '#fff',
     border: 'none',
   };
@@ -205,65 +206,87 @@ function getCompareBtnStyle(slotIdx: number) {
       <div class="content">
         <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
 
-                  <!-- Compare button group moved above columns, full width -->
-                  <div class="compare-btn-group-row">
-                    <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end;">
-                      <!-- Button for slot 1 -->
-                      <v-btn
-                        v-if="modelComparePath"
-                        :style="getCompareBtnStyle(0)"
-                        :title="compareBuffer.buffer.value[0] || ''"
-                        variant="outlined"
-                        @click="
-                          (compareBuffer.buffer.value[0] !== undefined && compareBuffer.buffer.value[0] !== modelComparePath)
-                            ? null
-                            : (
-                                compareBuffer.buffer.value[0] === modelComparePath
-                                  ? compareBuffer.remove(modelComparePath)
-                                  : (
-                                      compareBuffer.buffer.value[0] === undefined && compareBuffer.buffer.value.length === 0
-                                        ? compareBuffer.add(modelComparePath)
-                                        : null
-                                    )
-                              )
-                        "
-                      >
-                        1
-                      </v-btn>
-                      <!-- Arrow -->
-                      <!-- <span style="font-size: 22px; color: #888;">&#8594;</span>
-                      Button for slot 2 -->
-                      <v-btn
-                        v-if="modelComparePath"
-                        :style="getCompareBtnStyle(1)"
-                        :title="compareBuffer.buffer.value[1] || ''"
-                        variant="outlined"
-                        @click="
-                          (compareBuffer.buffer.value[1] !== undefined && compareBuffer.buffer.value[1] !== modelComparePath)
-                            ? null
-                            : (
-                                compareBuffer.buffer.value[1] === modelComparePath
-                                  ? compareBuffer.remove(modelComparePath)
-                                  : (
-                                      compareBuffer.buffer.value[1] === undefined && compareBuffer.buffer.value.length === 1
-                                        ? compareBuffer.add(modelComparePath)
-                                        : null
-                                    )
-                              )
-                        "
-                      >
-                        2
-                      </v-btn>
-                      <!-- Compare main button -->
-                      <v-btn
-                        color="primary"
-                        :disabled="!(compareBuffer.buffer.value[0] && compareBuffer.buffer.value[1])"
-                        style="margin-left: 16px; background: #DEB841; color: #fff; font-weight: bold;"
-                      >
-                        Compare
-                      </v-btn>
-                    </div>
-                  </div>
+        <!-- Compare button group moved above columns, full width -->
+        <div class="compare-btn-group-row">
+          <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end;">
+            <!-- Button for slot 1 -->
+            <template v-if="true">
+              <template v-if="compareBuffer.buffer.value[0]">
+                <v-btn
+                  :style="getCompareBtnStyle(0)"
+                  variant="outlined"
+                  color="error"
+                  @click="compareBuffer.remove(compareBuffer.buffer.value[0])"
+                  :title="compareBuffer.buffer.value[0]"
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20">
+                    <line x1="5" y1="5" x2="15" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="15" y1="5" x2="5" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </v-btn>
+              </template>
+              <template v-else>
+                <v-btn
+                  :style="getCompareBtnStyle(0)"
+                  :title="compareBuffer.buffer.value[0] || ''"
+                  variant="outlined"
+                  @click="
+                    (compareBuffer.buffer.value[0] !== undefined && compareBuffer.buffer.value[0] !== modelComparePath)
+                      ? null
+                      : (
+                          compareBuffer.buffer.value[0] === undefined && compareBuffer.buffer.value.length === 0
+                            ? compareBuffer.add(modelComparePath)
+                            : null
+                        )
+                  "
+                >
+                  1
+                </v-btn>
+              </template>
+              <!-- Button for slot 2 -->
+              <template v-if="compareBuffer.buffer.value[1]">
+                <v-btn
+                  :style="getCompareBtnStyle(1)"
+                  variant="outlined"
+                  color="error"
+                  @click="compareBuffer.remove(compareBuffer.buffer.value[1])"
+                  :title="compareBuffer.buffer.value[1]"
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20">
+                    <line x1="5" y1="5" x2="15" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="15" y1="5" x2="5" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </v-btn>
+              </template>
+              <template v-else>
+                <v-btn
+                  :style="getCompareBtnStyle(1)"
+                  :title="compareBuffer.buffer.value[1] || ''"
+                  variant="outlined"
+                  @click="
+                    (compareBuffer.buffer.value[1] !== undefined && compareBuffer.buffer.value[1] !== modelComparePath)
+                      ? null
+                      : (
+                          compareBuffer.buffer.value[1] === undefined && compareBuffer.buffer.value.length === 1
+                            ? compareBuffer.add(modelComparePath)
+                            : null
+                        )
+                  "
+                >
+                  2
+                </v-btn>
+              </template>
+            </template>
+            <!-- Compare main button -->
+            <v-btn
+              color="primary"
+              :disabled="!(compareBuffer.buffer.value[0] && compareBuffer.buffer.value[1])"
+              style="margin-left: 16px; background: #DEB841; color: #fff; font-weight: bold;"
+            >
+              Compare
+            </v-btn>
+          </div>
+        </div>
 
         <div class="main-columns">
           <div class="model-list-column">
