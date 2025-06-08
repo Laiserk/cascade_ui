@@ -1,28 +1,26 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetWorkspace from "@/utils/GetWorkspace";
+import ListItems from "@/components/ListItems.vue";
 import { ref, onMounted, computed } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {DataLine} from "@/models/DataLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router';
+import { openWorkspace, openRepo } from "@/utils/Open";
 
-const route = useRoute()
-const router = useRouter()
-const repoName = computed(() => route.params.repoName as string)
-const lineName = computed(() => route.params.lineName as string)
+const route = useRoute();
+const router = useRouter();
+const repoName = computed(() => route.params.repoName as string);
+const lineName = computed(() => route.params.lineName as string);
 
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
 const line = ref<DataLine | null>(null);
-
-function openDataset(repoName: string, lineName: string, datasetVer: string) {
-  router.push({ name: "dataset", params: { repoName, lineName, datasetVer } });
-}
 
 onMounted(async () => {
   const wsObj = await GetWorkspace();
@@ -32,53 +30,52 @@ onMounted(async () => {
     repo.value = new RepoClass(repoObj);
     if (repo.value) {
       const lineObj = await GetLine(repoName.value, lineName.value);
+      if (!lineObj.item_fields) {
+        lineObj.item_fields = [];
+      }
       line.value = new DataLine(lineObj);
     }
   }
-}
-);
+});
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value);
+  const wsName = workspace.value.name;
+  return [
+    {
+      title: wsName,
+      to: { name: 'main' }
+    },
+    {
+      title: repoName.value,
+      to: { name: 'repo', params: { repoName: repoName.value } }
+    },
+    {
+      title: lineName.value,
+      disabled: true
+    }
+  ];
 });
 
-const dataHeaders = [
-  { title: 'Name', value: 'name' },
-  { title: 'Saved', value: 'saved_at' },
-];
-
+function onBreadcrumbClick(e: any) {
+  const item = e?.item;
+  if (!item || item.disabled) return;
+  if (item.to?.name === 'main') {
+    openWorkspace(router);
+  } else if (item.to?.name === 'repo') {
+    openRepo(router, repoName.value);
+  }
+}
 </script>
 
 <template>
-  <head>
-    <meta charset="utf-8"/>
-    <title>List of experiments</title>
-    <link rel="icon" href="/logo.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-          rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-        rel="stylesheet">
-  </head>
-
-  <body>
-    <NavBar/>
-    <div>
-      <div class="content">
-        <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
-        <div v-if="line && line.items">
-          <v-data-table :headers="dataHeaders" :items="line.items" class="mt-4">
-            <template #item.name="{ item }">
-            <v-btn variant="text" style="font-family: Roboto,serif; font-size: 14px; color: #DEB841;" @click="openDataset(repoName, lineName, item.name)">
-              {{ item.name }}
-            </v-btn>
-          </template>
-          </v-data-table>
-        </div>
-      </div>
+  <NavBar/>
+  <div>
+    <div class="content">
+      <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
+      <ListItems v-if="line" :line="line"/>
     </div>
-  </body>
+  </div>
 </template>
 
 <style>

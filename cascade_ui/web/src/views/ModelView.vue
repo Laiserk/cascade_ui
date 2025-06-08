@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
-import GetRepo from "@/components/GetRepo";
-import GetLine from "@/components/GetLine";
-import GetModel from "@/components/GetModel";
-import GetWorkspace from "@/components/GetWorkspace";
+import GetRepo from "@/utils/GetRepo";
+import GetLine from "@/utils/GetLine";
+import GetModel from "@/utils/GetModel";
+import GetWorkspace from "@/utils/GetWorkspace";
+import LogView from "@/components/LogView.vue";
+import EnvTable from "@/components/EnvTable.vue";
+import TagsRow from "@/components/TagsRow.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { Repo as RepoClass } from "@/models/Repo";
 import {Model} from "@/models/Model";
 import {ModelLine} from "@/models/ModelLine";
 import type {Repo} from "@/models/Repo";
 import type {Workspace} from "@/models/Workspace";
+import { ModelPathSpec } from "@/models/PathSpecs";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
+import ConfigView from "@/components/ConfigView.vue";
+import { openWorkspace, openRepo, openLine } from "@/utils/Open";
+import CommentFeed from "@/components/CommentFeed.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +31,19 @@ const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
 const line = ref<ModelLine | null>(null);
 const model = ref<Model | null>(null);
+
+const modelPath = computed(() => {
+  if (repo.value && line.value && model.value) {
+    return new ModelPathSpec({
+      repo: repo.value.name,
+      line: line.value.name,
+      num: modelNum.value,
+    });
+  }
+  return null;
+});
+
+const tab = ref(0);
 
 async function loadModelData() {
   const wsObj = await GetWorkspace();
@@ -53,8 +73,38 @@ watch(
 
 const breadcrumbs = computed(() => {
   if (!workspace.value?.name) return [];
-  return workspace.value.name.split(/[/\\]/).filter(Boolean).concat(repoName.value).concat(lineName.value).concat(modelNumString.value);
+  const wsName = workspace.value.name;
+  return [
+    {
+      title: wsName,
+      to: { name: 'main' }
+    },
+    {
+      title: repoName.value,
+      to: { name: 'repo', params: { repoName: repoName.value } }
+    },
+    {
+      title: lineName.value,
+      to: { name: 'model_line', params: { repoName: repoName.value, lineName: lineName.value } }
+    },
+    {
+      title: modelNumString.value,
+      disabled: true
+    }
+  ];
 });
+
+function onBreadcrumbClick(e: any) {
+  const item = e?.item;
+  if (!item || item.disabled) return;
+  if (item.to?.name === 'main') {
+    openWorkspace(router);
+  } else if (item.to?.name === 'repo') {
+    openRepo(router, repoName.value);
+  } else if (item.to?.name === 'model_line') {
+    openLine(router, { repo: repoName.value, line: lineName.value, lineType: "model_line" });
+  }
+}
 
 function goToModel(modelNumString: string) {
   router.push({
@@ -66,25 +116,38 @@ function goToModel(modelNumString: string) {
     }
   });
 }
+
+// Copy to clipboard logic
+const copyFeedback = ref("");
+function copySlug() {
+  if (model.value?.slug) {
+    navigator.clipboard.writeText(model.value.slug);
+    copyFeedback.value = "Copied";
+    setTimeout(() => {
+      copyFeedback.value = "";
+    }, 1200);
+  }
+}
+
+// Add copy for path
+const copyPathFeedback = ref("");
+function copyPath() {
+  if (model.value?.path) {
+    navigator.clipboard.writeText(model.value.path);
+    copyPathFeedback.value = "Copied!";
+    setTimeout(() => {
+      copyPathFeedback.value = "";
+    }, 1200);
+  }
+}
 </script>
 
 <template>
-  <head>
-    <meta charset="utf-8"/>
-    <title>List of experiments</title>
-    <link rel="icon" href="/logo.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-          rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-        rel="stylesheet">
-  </head>
-
-  <body>
+  <div>
     <NavBar/>
     <div>
       <div class="content">
-        <v-breadcrumbs :items="breadcrumbs"></v-breadcrumbs>
+        <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
         <div class="main-columns">
           <div class="model-list-column">
             <div class="model-list-header">Models</div>
@@ -100,144 +163,164 @@ function goToModel(modelNumString: string) {
               </div>
             </div>
           </div>
-          <div class="model-info">
-            <p class="slug"> {{ model?.slug }}</p>
-            <p class="text"> {{ model?.path }}</p>
-            <div class="tags-row" v-if="model?.tags && model.tags.length">
-              <v-chip
-                v-for="tag in model.tags"
-                :key="tag"
-                class="tag-chip"
-                :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
-                background="#D9D7DD"
-                text-color="#555"
-                outlined
-              >
-                {{ tag }}
-              </v-chip>
-            </div>
-            <p class="text"> Created: {{ model?.created_at }}</p>
-            <p class="text"> Saved: {{ model?.saved_at }}</p>
-            <div style="margin-top: 20px;margin-bottom: 20px">
-              <p class="text"> {{ model?.description }}</p>
-            </div>
+          <div class="tabs-column">
+            <v-tabs v-model="tab" class="custom-tabs">
+              <v-tab class="custom-tab">General</v-tab>
+              <v-tab class="custom-tab">Logs</v-tab>
+              <v-tab class="custom-tab">Config</v-tab>
+            </v-tabs>
+            <v-tabs-items v-model="tab">
+              <v-tab-item>
+                <div v-if="tab === 0" class="general-tab-flex">
+                  <div class="model-info">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <p class="slug" style="margin: 0;">{{ model?.slug }}</p>
+                      <button
+                        v-if="model?.slug"
+                        @click="copySlug"
+                        title="Copy slug"
+                        class="copy-btn"
+                        style="background: none; border: none; cursor: pointer; padding: 0;"
+                      >
+                        <img
+                          src="@/assets/copy-icon.png"
+                          alt="Copy"
+                          style="width: 18px; height: 18px; display: block;"
+                        />
+                      </button>
+                      <span
+                        v-if="copyFeedback || true"
+                        class="copy-feedback"
+                        :class="{ visible: copyFeedback }"
+                      >{{ copyFeedback }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <p class="text" style="margin: 0;">{{ model?.path }}</p>
+                      <button
+                        v-if="model?.path"
+                        @click="copyPath"
+                        title="Copy path"
+                        class="copy-btn"
+                        style="background: none; border: none; cursor: pointer; padding: 0;"
+                      >
+                        <img
+                          src="@/assets/copy-icon.png"
+                          alt="Copy"
+                          style="width: 18px; height: 18px; display: block;"
+                        />
+                      </button>
+                      <span
+                        v-if="copyPathFeedback || true"
+                        class="copy-feedback"
+                        :class="{ visible: copyPathFeedback }"
+                      >{{ copyPathFeedback }}</span>
+                    </div>
+                    <TagsRow v-if="model" :tags="model.tags"/>
+                    <p class="text"> Created: {{ model?.created_at }}</p>
+                    <p class="text"> Saved: {{ model?.saved_at }}</p>
+                    <div style="margin-top: 20px;margin-bottom: 20px">
+                      <p class="text"> {{ model?.description }}</p>
+                    </div>
 
-            <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
-            <v-table v-if="model && model.params && Object.keys(model.params).length">
-              <tbody>
-                <tr v-for="(value, key) in model.params" :key="key">
-                  <td><b>{{ key }}</b></td>
-                  <td>{{ typeof value === 'object' ? JSON.stringify(value) : String(value) }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
+                    <v-subheader style="margin-top: 32px;">PARAMETERS</v-subheader>
+                    <v-table v-if="model && model.params && Object.keys(model.params).length">
+                      <tbody>
+                        <tr v-for="(value, key) in model.params" :key="key">
+                          <td><b>{{ key }}</b></td>
+                          <td>{{ typeof value === 'object' ? JSON.stringify(value) : String(value) }}</td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">METRICS</v-subheader>
-            <v-table v-if="model && model.metrics && model.metrics.length">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Value</th>
-                  <th>Dataset</th>
-                  <th>Split</th>
-                  <th>Direction</th>
-                  <th>Interval</th>
-                  <th>Extra</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(metric, idx) in model.metrics" :key="idx">
-                  <td>{{ metric.name }}</td>
-                  <td>{{ metric.value }}</td>
-                  <td>{{ metric.dataset }}</td>
-                  <td>{{ metric.split }}</td>
-                  <td>{{ metric.direction }}</td>
-                  <td>
-                    <span v-if="metric.interval">
-                      [{{ metric.interval[0] }}, {{ metric.interval[1] }}]
-                    </span>
-                    <span v-else>-</span>
-                  </td>
-                  <td>
-                    <span v-if="metric.extra">{{ JSON.stringify(metric.extra) }}</span>
-                    <span v-else>-</span>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
+                    <v-subheader style="margin-top: 32px;">METRICS</v-subheader>
+                    <v-table v-if="model && model.metrics && model.metrics.length">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Value</th>
+                          <th>Dataset</th>
+                          <th>Split</th>
+                          <th>Direction</th>
+                          <th>Interval</th>
+                          <th>Extra</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(metric, idx) in model.metrics" :key="idx">
+                          <td>{{ metric.name }}</td>
+                          <td>{{ metric.value }}</td>
+                          <td>{{ metric.dataset }}</td>
+                          <td>{{ metric.split }}</td>
+                          <td>{{ metric.direction }}</td>
+                          <td>
+                            <span v-if="metric.interval">
+                              [{{ metric.interval[0] }}, {{ metric.interval[1] }}]
+                            </span>
+                            <span v-else>-</span>
+                          </td>
+                          <td>
+                            <span v-if="metric.extra">{{ JSON.stringify(metric.extra) }}</span>
+                            <span v-else>-</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
-            <v-table v-if="model && model.artifacts && model.artifacts.length">
-              <tbody>
-                <tr v-for="artifact in model.artifacts" :key="artifact">
-                  <td>{{ artifact }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
+                    <v-subheader style="margin-top: 32px;">ARTIFACTS</v-subheader>
+                    <v-table v-if="model && model.artifacts && model.artifacts.length">
+                      <tbody>
+                        <tr v-for="artifact in model.artifacts" :key="artifact.name">
+                          <td>{{ artifact.name }}</td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
 
-            <v-subheader style="margin-top: 32px;">FILES</v-subheader>
-            <v-table v-if="model && model.files && model.files.length">
-              <tbody>
-                <tr v-for="file in model.files" :key="file">
-                  <td>{{ file }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else style="height:24px"></div>
-
-            <div v-if="model && (model.python_version && model.git_commit && model.user && model.host && model.cwd)" style="height:24px">
-              <v-subheader style="margin-top: 32px;">ENVIRONMENT</v-subheader>
-              <v-table v-if="model">
-                <tbody>
-                  <tr>
-                    <td><b>Python version</b></td>
-                    <td>{{ model.python_version }}</td>
-                  </tr>
-                  <tr>
-                    <td><b>Git commit</b></td>
-                    <td>{{ model.git_commit }}</td>
-                  </tr>
-                  <tr>
-                    <td><b>Host</b></td>
-                    <td>{{ model.user }}@{{ model.host }}</td>
-                  </tr>
-                  <tr>
-                    <td><b>CWD</b></td>
-                    <td>{{ model.cwd }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </div>
-
-          </div>
-          <div class="comments-section">
-            <div
-              v-for="comment in model?.comments"
-              :key="comment.id"
-              class="comment-bubble"
-            >
-              <div class="comment-header">
-                <span class="comment-user">{{ comment.user }}@{{ comment.host }}</span>
-                <span class="comment-timestamp">{{ comment.timestamp }}</span>
-              </div>
-              <div class="comment-message">
-                {{ comment.message }}
-              </div>
-            </div>
+                    <v-subheader style="margin-top: 32px;">FILES</v-subheader>
+                    <v-table v-if="model && model.files && model.files.length">
+                      <tbody>
+                        <tr v-for="file in model.files" :key="file.name">
+                          <td>{{ file.name }}</td>
+                          <td>{{ file.size }}</td>
+                        </tr>
+                      </tbody>
+                    </v-table>
+                    <div v-else style="height:24px"></div>
+                    <EnvTable v-if="model" :tr="model"/>
+                  </div>
+                  <CommentFeed
+                    v-if="model"
+                    :comments="model.comments"
+                    :pathParts="[repoName, lineName, modelNumString]"
+                    :onCommentSent="loadModelData"
+                  />
+                </div>
+              </v-tab-item>
+              <v-tab-item>
+                <div v-if="tab === 1">
+                  <LogView v-if="modelPath" :path="modelPath" />
+                </div>
+              </v-tab-item>
+              <v-tab-item>
+                <div v-if="tab === 2">
+                  <ConfigView v-if="modelPath" :path="modelPath" />
+                </div>
+              </v-tab-item>
+            </v-tabs-items>
           </div>
         </div>
       </div>
     </div>
-  </body>
+  </div>
 </template>
 
 <style>
 .content {
   margin-left: 60px;
   margin-right: 60px;
+  max-width: 1600px;
 }
 .main-columns {
   display: flex;
@@ -246,13 +329,17 @@ function goToModel(modelNumString: string) {
   width: 100%;
 }
 .model-list-column {
-  width: 20%;
+  width: 10%;
   min-width: 120px;
   margin-top: 20px;
   margin-right: 40px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+.tabs-column {
+  flex: 1;
+  margin-top: 20px;
 }
 .model-list-header {
   font-family: Roboto;
@@ -265,6 +352,8 @@ function goToModel(modelNumString: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 1000px;
+  overflow-y: auto;
 }
 .model-list-item {
   padding: 8px 12px;
@@ -280,30 +369,18 @@ function goToModel(modelNumString: string) {
   background: #D9D7DD;
   color: #555;
 }
+.general-tab-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100%;
+}
 .model-info {
   margin-top: 20px;
-  width: 60%;
+  flex: 0 1 70%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
-}
-.comments-section {
-  flex: 1;
-  margin-top: 20px;
-  margin-left: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.slug {
-  font-family: Roboto;
-  font-weight: bold;
-  font-size: 24px;
-  color: #DB504A;
-}
-.text {
-  font-family: Roboto;
-  font-size: 18px;
-  color: #898989;
 }
 .tags-row {
   display: flex;
@@ -316,33 +393,38 @@ function goToModel(modelNumString: string) {
   align-items: center;
   display: flex;
 }
-.comment-bubble {
-  background: #f4f4f4;
-  border-radius: 12px;
-  padding: 16px;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+.copy-btn {
+  font-size: 18px;
+  vertical-align: middle;
 }
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #888;
-}
-.comment-user {
+.copy-feedback {
+  font-size: 18px;
+  color: #db504a77;
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.35s;
+  min-width: 60px;
+  display: inline-block;
+  font-family: Roboto;
   font-weight: bold;
 }
-.comment-timestamp {
-  font-size: 13px;
-  color: #aaa;
+.copy-feedback.visible {
+  opacity: 1;
 }
-.comment-message {
-  font-size: 16px;
-  color: #222;
-  word-break: break-word;
+.custom-tabs {
+  background-color: #F5E6B2;
+  border-radius: 8px;
+}
+
+.custom-tab {
+  color: #DEB841 !important;
+  background-color: #FFFDF5 !important;
+  transition: background 0.2s, color 0.2s;
+}
+
+.custom-tab.v-tab--active,
+.custom-tab:hover {
+  background-color: #E8D496 !important;
+  color: #fff !important;
 }
 </style>

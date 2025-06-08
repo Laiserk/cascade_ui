@@ -15,131 +15,46 @@ limitations under the License.
 """
 
 import glob
+import json
 import os
 import warnings
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
-
-import pydantic
+from typing import Any, Dict, List
 
 from cascade import __version__ as cascade_version
-from cascade.base import MetaHandler, ZeroMetaError, supported_meta_formats
+from cascade.base import (
+    MetaHandler,
+    TraceableOnDisk,
+    ZeroMetaError,
+    supported_meta_formats,
+)
+from cascade.base.utils import flatten_dict
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 
 from . import __version__
+from .models import (
+    AddCommentRequest,
+    ConfigResponse,
+    DatasetPathSpec,
+    DatasetResponse,
+    File,
+    Item,
+    LinePathSpec,
+    LineResponse,
+    LineRow,
+    LogResponse,
+    ModelPathSpec,
+    ModelResponse,
+    RepoCard,
+    RepoPathSpec,
+    RepoResponse,
+    VersionResponse,
+    WorkspaceResponse,
+)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
-
-
-class Container(pydantic.BaseModel):
-    name: str
-    len: int
-
-
-class WorkspaceResponse(Container):
-    repos: List[Container]
-
-
-class RepoPathSpec(pydantic.BaseModel):
-    repo: str
-
-
-class LineRow(Container):
-    type: str
-    created_at: str
-    updated_at: str
-
-
-class RepoResponse(Container):
-    lines: List[LineRow]
-
-
-class LinePathSpec(pydantic.BaseModel):
-    repo: str
-    line: str
-
-
-class Item(pydantic.BaseModel):
-    name: str
-    slug: Optional[str] = None
-    created_at: Optional[str] = None
-    saved_at: str
-
-
-class LineResponse(Container):
-    items: List[Item]
-
-
-class ModelPathSpec(pydantic.BaseModel):
-    repo: str
-    line: str
-    num: int
-
-
-class Comment(pydantic.BaseModel):
-    id: str
-    user: str
-    host: str
-    timestamp: str
-    message: str
-
-
-class Metric(pydantic.BaseModel):
-    name: str
-    value: Optional[float] = None
-    dataset: Optional[str] = None
-    split: Optional[str] = None
-    direction: Optional[Literal["up", "down"]] = None
-    interval: Optional[Tuple[float, float]] = None
-    extra: Optional[Dict[str, Any]] = None
-
-
-class ModelResponse(pydantic.BaseModel):
-    slug: str
-    path: str
-    created_at: str
-    saved_at: str
-    user: str
-    host: str
-    cwd: Optional[str]
-    python_version: str
-    description: Optional[str]
-    comments: List[Comment]
-    tags: List[str]
-    params: Dict[str, Any]
-    metrics: List[Metric]
-    artifacts: List[str]
-    files: List[str]
-    git_commit: Optional[str]
-    git_uncommitted_changes: Optional[List[str]]
-
-
-class DatasetPathSpec(pydantic.BaseModel):
-    repo: str
-    line: str
-    ver: str
-
-
-class DatasetResponse(pydantic.BaseModel):
-    name: str
-    path: str
-    saved_at: str
-    user: str
-    host: str
-    cwd: str
-    python_version: str
-    description: Union[str, None]
-    comments: List[Dict[Any, Any]]
-    tags: Union[str, List[str]]
-    git_commit: Optional[str] = None
-    git_uncommitted_changes: Optional[List[str]] = None
-
-
-class VersionResponse(pydantic.BaseModel):
-    cascade_ml_version: str
-    cascade_ui_version: str
 
 
 class Server:
@@ -168,17 +83,33 @@ class Server:
         self._ws = Workspace(path)
         self._ws_name = self._ws.get_root()
 
+    def add_comment(self, req: AddCommentRequest):
+        path = os.path.join(self._ws_name, *req.path_parts)
+        tr = TraceableOnDisk(path, meta_fmt=".json")
+        tr.comment(req.comment)
+
     def workspace(self) -> WorkspaceResponse:
         self._ws = Workspace(self._ws_name)
-        repo_names = self._ws.get_repo_names()
-        repo_lengths = [len(self._ws[name]) for name in repo_names]
+        ws_meta = self._ws.get_meta()
 
-        repos = [Container(name=name, len=length) for name, length in zip(repo_names, repo_lengths)]
+        repos = []
+        for name in self._ws.get_repo_names():
+            repo = self._ws[name]
+            meta = repo.get_meta()
+            card = RepoCard(name=name, len=len(repo), tags=meta[0].get("tags"))
+            repos.append(card)
 
-        return WorkspaceResponse(name=self._ws_name, len=len(repos), repos=repos)
+        return WorkspaceResponse(
+            name=self._ws_name,
+            len=len(repos),
+            repos=repos,
+            tags=ws_meta[0].get("tags"),
+            comments=ws_meta[0].get("comments"),
+        )
 
     def repo(self, path: RepoPathSpec) -> RepoResponse:
         r = self._ws[path.repo]
+        repo_meta = r.get_meta()
         names = r.get_line_names()
         lines = [r[line] for line in names]
 
@@ -198,36 +129,131 @@ class Server:
                 name=name,
                 len=len(line),
                 type=t,
+                tags=meta[0].get("tags"),
                 created_at=created_at,
                 updated_at=updated_at,
             )
             line_rows.append(row)
 
-        return RepoResponse(name=path.repo, len=len(lines), lines=line_rows)
+        return RepoResponse(
+            name=path.repo,
+            len=len(lines),
+            lines=line_rows,
+            tags=repo_meta[0].get("tags"),
+            comments=repo_meta[0].get("comments"),
+        )
+
+    def _prepare_item_dict(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        meta = meta[0]
+        flat = flatten_dict(meta, separator=".", root_keys_to_ignore=("tags", "metrics"))
+
+        metrics = flat.pop("metrics", [])
+        for metric in metrics:
+            name = metric["name"]
+            for key in ["dataset", "split"]:
+                part = metric.get(key)
+                name += "_" + part if part else ""
+            flat[f"metrics.{name}"] = metric["value"]
+
+        return flat
+
+    def _get_item_fields(self, meta: List[Dict[str, Any]]) -> List[str]:
+        def keys_filter(key: str) -> bool:
+            if key.startswith(("comments", "git_uncommitted_changes", "links")):
+                return False
+            if key in ("name", "slug", "tags", "saved_at", "created_at"):
+                return False
+            return True
+
+        flat = self._prepare_item_dict(meta)
+        keys = list(filter(keys_filter, flat.keys()))
+        return keys
+
+    def line_item_table(
+        self, line_path: LinePathSpec, item_fields: List[str]
+    ) -> List[Dict[str, Any]]:
+        line = self._ws[line_path.repo][line_path.line]
+        items = []
+        for i in range(len(line)):
+            try:
+                meta = line.load_obj_meta(i)
+            except ZeroMetaError:
+                continue
+            item = {}
+            flat = self._prepare_item_dict(meta)
+            for key in item_fields:
+                if key == "num":
+                    value = i
+                else:
+                    value = flat.get(key)
+                item[key] = value
+            items.append(item)
+        return items
+
+    def _filter_plot_fields(self, field_name):
+        if field_name.startswith(("metrics", "params")):
+            return True
+        return False
 
     def line(self, path: LinePathSpec) -> LineResponse:
         line = self._ws[path.repo][path.line]
+        line_meta = line.get_meta()
 
         items = []
         item_names = line.get_item_names()
+        item_fields = set()
         for i, name in enumerate(item_names):
             try:
                 meta = line.load_obj_meta(i)
+                item_fields.update(self._get_item_fields(meta))
             except ZeroMetaError:
                 continue
             item = Item(
                 name=name,
                 slug=meta[0].get("slug"),
+                tags=meta[0].get("tags"),
                 created_at=meta[0].get("created_at"),
                 saved_at=meta[0]["saved_at"],
             )
             items.append(item)
-        return LineResponse(name=path.line, len=len(line), items=items)
+        return LineResponse(
+            name=path.line,
+            len=len(line),
+            type=CLS2TYPE[type(line)],
+            comments=line_meta[0].get("comments"),
+            tags=line_meta[0].get("tags"),
+            items=items,
+            item_fields=list(sorted(item_fields)),
+            plot_fields=list(sorted(filter(self._filter_plot_fields, item_fields))),
+        )
+
+    def _file_size_string(self, size_bytes: int) -> str:
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024**2:
+            return f"{size_bytes / 1024:.1f} KB"
+        elif size_bytes < 1024**3:
+            return f"{size_bytes / 1024**2:.1f} MB"
+        else:
+            return f"{size_bytes / 1024**3:.1f} GB"
 
     def model(self, path: ModelPathSpec) -> ModelResponse:
         line = self._ws[path.repo][path.line]
         meta = line.load_model_meta(path.num)
-        files = line.load_artifact_paths(path.num)
+        paths = line.load_artifact_paths(path.num)
+
+        files = []
+        artifacts = []
+        for key in paths:
+            for path in paths[key]:
+                if os.path.exists(path):
+                    size_bytes = os.path.getsize(path)
+                    size_str = self._file_size_string(size_bytes)
+                    file = File(name=path, size=size_str)
+                    if key == "artifacts":
+                        artifacts.append(file)
+                    else:
+                        files.append(file)
 
         return ModelResponse(
             slug=meta[0]["slug"],
@@ -243,11 +269,47 @@ class Server:
             tags=meta[0]["tags"],
             params=meta[0]["params"],
             metrics=meta[0]["metrics"],
-            artifacts=files["artifacts"],
-            files=files["files"],
+            artifacts=artifacts,
+            files=files,
             git_commit=meta[0].get("git_commit"),
             git_uncommitted_changes=meta[0].get("git_uncommitted_changes"),
         )
+
+    def run_log(self, path: ModelPathSpec) -> LogResponse:
+        log_file = os.path.join(
+            self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_run.log"
+        )
+        log_text = None
+        if os.path.exists(log_file):
+            with open(log_file, "r") as f:
+                log_text = "\n".join(f.readlines())
+
+        return LogResponse(log_text=log_text)
+
+    def run_config(self, path: ModelPathSpec) -> ConfigResponse:
+        config_file = os.path.join(
+            self._ws_name, path.repo, path.line, f"{path.num:0>5d}", "files", "cascade_config.json"
+        )
+        overrides_file = os.path.join(
+            self._ws_name,
+            path.repo,
+            path.line,
+            f"{path.num:0>5d}",
+            "files",
+            "cascade_overrides.json",
+        )
+        config = None
+        overrides = None
+
+        if os.path.exists(config_file):
+            with open(config_file, "r") as f:
+                config = json.load(f)
+
+        if os.path.exists(overrides_file):
+            with open(overrides_file, "r") as f:
+                overrides = json.load(f)
+
+        return ConfigResponse(config=config, overrides=overrides)
 
     def dataset(self, path: DatasetPathSpec) -> DatasetResponse:
         line = self._ws[path.repo].add_line(path.line, line_type="data")
