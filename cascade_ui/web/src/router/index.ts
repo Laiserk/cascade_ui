@@ -5,6 +5,7 @@ import ModelLineView from '../views/ModelLineView.vue'
 import DataLineView from '../views/DataLineView.vue'
 import ModelView from '../views/ModelView.vue'
 import DatasetView from '../views/DatasetView.vue'
+import ModelCompareView from '../views/ModelCompareView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,6 +39,11 @@ const router = createRouter({
       path: '/repos/:repoName/:lineName/:datasetVer',
       name: 'dataset',
       component: DatasetView
+    },
+    {
+      path: '/compare/models',
+      name: 'compare_models',
+      component: ModelCompareView
     },
   ]
 })

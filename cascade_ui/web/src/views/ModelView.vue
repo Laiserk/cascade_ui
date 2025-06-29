@@ -181,7 +181,6 @@ const compareBuffer = useCompareBuffer();
 
 const modelComparePath = computed(() => model.value?.path || "");
 
-// Common style for compare buttons
 function getCompareBtnStyle(slotIdx: number) {
   const buf = compareBuffer.buffer.value;
   const isActive = buf[slotIdx] !== undefined;
@@ -195,6 +194,17 @@ function getCompareBtnStyle(slotIdx: number) {
     color: '#fff',
     border: 'none',
   };
+}
+
+function goToCompare() {
+  const left = compareBuffer.buffer.value[0];
+  const right = compareBuffer.buffer.value[1];
+  if (left && right) {
+    router.push({
+      name: "compare_models",
+      query: { left, right }
+    });
+  }
 }
 
 </script>
@@ -440,6 +450,7 @@ function getCompareBtnStyle(slotIdx: number) {
                         color="primary"
                         :disabled="!(compareBuffer.buffer.value[0] && compareBuffer.buffer.value[1])"
                         style="margin-left: 16px; background: #DEB841; color: #fff; font-weight: bold;"
+                        @click="goToCompare"
                       >
                         Compare
                       </v-btn>
