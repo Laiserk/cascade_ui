@@ -17,12 +17,14 @@ limitations under the License.
 import glob
 import json
 import os
+import time
 import warnings
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from cascade import __version__ as cascade_version
 from cascade.base import (
     MetaHandler,
+    MetaIOError,
     TraceableOnDisk,
     ZeroMetaError,
     supported_meta_formats,
@@ -45,6 +47,7 @@ from .models import (
     LogResponse,
     ModelPathSpec,
     ModelResponse,
+    ItemSuggestions,
     RepoCard,
     RepoPathSpec,
     RepoResponse,
@@ -55,6 +58,32 @@ from .models import (
 SCRIPT_DIR = os.path.dirname(__file__)
 
 CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
+
+
+class TimedCache:
+    def __init__(self, ttl_sec: float):
+        self.ttl_sec = ttl_sec
+        self.cache = {}
+
+    def add(self, key: str, value: Any) -> None:
+        self.cache[key] = {
+            "value": value,
+            "time": time.time()
+        }
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if key not in self.cache:
+            return default
+
+        item = self.cache[key]
+
+        if time.time() - item["time"] > self.ttl_sec:
+            del self.cache[key]
+            return default
+        else:
+            self.cache[key]["time"] = time.time()
+
+        return item["value"]
 
 
 class Server:
@@ -82,6 +111,7 @@ class Server:
         self._ws_meta = meta
         self._ws = Workspace(path)
         self._ws_name = self._ws.get_root()
+        self._timed_cache = TimedCache(5)
 
     def add_comment(self, req: AddCommentRequest):
         path = os.path.join(self._ws_name, *req.path_parts)
@@ -227,6 +257,34 @@ class Server:
             plot_fields=list(sorted(filter(self._filter_plot_fields, item_fields))),
         )
 
+    def iterate_over_item_paths(self):
+        for repo_name in self._ws.get_repo_names():
+            path_parts = [repo_name]
+            repo = self._ws.add_repo(repo_name)
+            for line_name in repo.get_line_names():
+                path_parts.append(line_name)
+                line = repo.add_line(line_name)
+                for item_name in line.get_item_names():
+                    path_parts.append(item_name)
+                    yield os.path.join(*path_parts)
+                    path_parts.pop()
+                path_parts.pop()
+            path_parts.pop()
+
+    def item_search_suggestions(self, path_part: str) -> ItemSuggestions:
+        suggestions = []
+
+        item_paths = self._timed_cache.get("item_paths")
+        if not item_paths:
+            item_paths = [p for p in self.iterate_over_item_paths()]
+            self._timed_cache.add("item_paths", item_paths)
+
+        for p in item_paths:
+            if p.startswith(path_part):
+                suggestions.append(p)
+
+        return ItemSuggestions(paths=suggestions)
+
     def _file_size_string(self, size_bytes: int) -> str:
         if size_bytes < 1024:
             return f"{size_bytes} B"
@@ -245,11 +303,11 @@ class Server:
         files = []
         artifacts = []
         for key in paths:
-            for path in paths[key]:
-                if os.path.exists(path):
-                    size_bytes = os.path.getsize(path)
+            for p in paths[key]:
+                if os.path.exists(p):
+                    size_bytes = os.path.getsize(p)
                     size_str = self._file_size_string(size_bytes)
-                    file = File(name=path, size=size_str)
+                    file = File(name=p, size=size_str)
                     if key == "artifacts":
                         artifacts.append(file)
                     else:

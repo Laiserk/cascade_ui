@@ -141,3 +141,7 @@ class ConfigResponse(pydantic.BaseModel):
 class AddCommentRequest(pydantic.BaseModel):
     comment: str
     path_parts: List[str]
+
+
+class ItemSuggestions(pydantic.BaseModel):
+    paths: List[str]
