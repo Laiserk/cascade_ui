@@ -183,14 +183,14 @@ function display(value: any): string {
 
 /* Fixed headers are painted with the theme surface colour by default */
 .compare-table :deep(thead th) {
-  background-color: #FFFDF5 !important;
+  background-color: #fff !important;
 }
 
 .field-column {
   position: sticky;
   left: 0;
   z-index: 1;
-  background-color: #FFFDF5;
+  background-color: #fff;
   white-space: nowrap;
 }
 
@@ -215,16 +215,16 @@ function display(value: any): string {
 }
 
 .model-link {
-  color: #DEB841;
+  color: #084C61;
   font-weight: bold;
   text-decoration: none;
 }
 
 .differs {
-  background-color: #F5E6B2;
+  background-color: #fff8ff;
 }
 
 .differs .field-column {
-  background-color: #F5E6B2;
+  background-color: #fff;
 }
 </style>
