@@ -124,12 +124,16 @@ function display(value: any): string {
                   <v-tooltip activator="parent" location="top">{{ column.path }}</v-tooltip>
                 </router-link>
                 <v-btn
-                  icon="$close"
+                  icon
                   variant="text"
                   size="x-small"
-                  :title="`Remove ${column.path} from comparison`"
                   @click="emit('remove', column.id)"
-                />
+                >
+                  <v-icon icon="$close" size="20"/>
+                  <v-tooltip activator="parent" location="top">
+                    Remove {{ column.path }} from comparison
+                  </v-tooltip>
+                </v-btn>
               </div>
             </th>
           </tr>
@@ -138,8 +142,11 @@ function display(value: any): string {
             <th class="field-column">slug</th>
             <th v-for="column in props.columns" :key="column.id" class="slug-cell">
               <span v-if="column.slug">{{ column.slug }}</span>
-              <span v-else class="slug-missing" title="The SLUG file of this model is missing">
+              <span v-else class="slug-missing">
                 no slug
+                <v-tooltip activator="parent" location="top">
+                  The SLUG file of this model is missing
+                </v-tooltip>
               </span>
             </th>
           </tr>

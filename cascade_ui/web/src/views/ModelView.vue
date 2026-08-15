@@ -139,6 +139,8 @@ const compareId = computed(() => {
   return [repoName.value, lineName.value, modelNumString.value].join("/");
 });
 
+const inCompare = computed(() => compareStore.has(compareId.value));
+
 function toggleCompare() {
   if (compareStore.has(compareId.value)) {
     compareStore.remove(compareId.value);
@@ -154,7 +156,7 @@ const copyPathFeedback = ref("");
 function copyPath() {
   if (model.value?.path) {
     navigator.clipboard.writeText(model.value.path);
-    copyPathFeedback.value = "Copied!";
+    copyPathFeedback.value = "Copied";
     setTimeout(() => {
       copyPathFeedback.value = "";
     }, 1200);
@@ -198,7 +200,6 @@ function copyPath() {
                       <button
                         v-if="model?.slug"
                         @click="copySlug"
-                        title="Copy slug"
                         class="copy-btn"
                         style="background: none; border: none; cursor: pointer; padding: 0;"
                       >
@@ -207,7 +208,24 @@ function copyPath() {
                           alt="Copy"
                           style="width: 18px; height: 18px; display: block;"
                         />
+                        <v-tooltip activator="parent" location="top">Copy slug</v-tooltip>
                       </button>
+                      <v-btn
+                        v-if="model"
+                        icon
+                        variant="text"
+                        size="x-small"
+                        @click="toggleCompare"
+                      >
+                        <v-icon
+                          :icon="inCompare ? mdiClose : mdiScaleBalance"
+                          :color="inCompare ? '#DEB841' : undefined"
+                          size="20"
+                        />
+                        <v-tooltip activator="parent" location="top">
+                          {{ inCompare ? "Remove from comparison" : "Add to compare" }}
+                        </v-tooltip>
+                      </v-btn>
                       <span
                         v-if="copyFeedback || true"
                         class="copy-feedback"
@@ -219,7 +237,6 @@ function copyPath() {
                       <button
                         v-if="model?.path"
                         @click="copyPath"
-                        title="Copy path"
                         class="copy-btn"
                         style="background: none; border: none; cursor: pointer; padding: 0;"
                       >
@@ -228,21 +245,13 @@ function copyPath() {
                           alt="Copy"
                           style="width: 18px; height: 18px; display: block;"
                         />
+                        <v-tooltip activator="parent" location="top">Copy path</v-tooltip>
                       </button>
                       <span
                         v-if="copyPathFeedback || true"
                         class="copy-feedback"
                         :class="{ visible: copyPathFeedback }"
                       >{{ copyPathFeedback }}</span>
-                    </div>
-                    <div style="margin-top: 8px; margin-bottom: 8px;">
-                      <v-btn
-                        :disabled="!model"
-                        :color="compareStore.has(compareId) ? '#DEB841' : '#D9D7DD'"
-                        :prepend-icon="compareStore.has(compareId) ? mdiClose : mdiScaleBalance"
-                        style="color: #000;"
-                        @click="toggleCompare"
-                      >{{ compareStore.has(compareId) ? "In comparison" : "Add to compare" }}</v-btn>
                     </div>
                     <TagsRow v-if="model" :tags="model.tags"/>
                     <p class="text"> Created: {{ model?.created_at }}</p>
