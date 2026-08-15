@@ -2,9 +2,9 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import * as echarts from "echarts";
 import type { PlotSeries } from "@/models/Plots";
-import { seriesColor } from "@/utils/PlotColors";
+import { seriesColor, metricShade } from "@/utils/PlotColors";
 
-const props = defineProps<{ series: PlotSeries[], field: string }>();
+const props = defineProps<{ series: PlotSeries[], fields: string[] }>();
 
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
@@ -52,24 +52,42 @@ const slugs = computed(() => {
 });
 
 const chartSeries = computed(() => {
-  return props.series.map((series, index) => {
-    const byNum: Record<number, any> = {};
-    for (const point of series.points) {
-      byNum[point.num] = point.values[props.field];
+  const curves = [];
+  for (const [lineIndex, series] of props.series.entries()) {
+    for (const [fieldIndex, field] of props.fields.entries()) {
+      const byNum: Record<number, any> = {};
+      for (const point of series.points) {
+        byNum[point.num] = point.values[field];
+      }
+      const color = metricShade(
+        seriesColor(lineIndex),
+        fieldIndex,
+        props.fields.length
+      );
+      curves.push({
+        name: props.fields.length > 1 ? `${series.path} · ${field}` : series.path,
+        seriesId: series.id,
+        field: field,
+        type: "line" as const,
+        connectNulls: true, // Metrics can be recorded not every step, but we should still connect them
+        data: categories.value.map(num => {
+          const value = byNum[num];
+          return typeof value === "number" && !isNaN(value) ? value : null;
+        }),
+        lineStyle: { color: color },
+        itemStyle: { color: color }
+      });
     }
-    return {
-      name: series.path,
-      id: series.id,
-      type: "line" as const,
-      connectNulls: true, // Metrics can be recorded not every step, but we should still connect them
-      data: categories.value.map(num => {
-        const value = byNum[num];
-        return typeof value === "number" && !isNaN(value) ? value : null;
-      }),
-      lineStyle: { color: seriesColor(index) },
-      itemStyle: { color: seriesColor(index) }
-    };
-  });
+  }
+  return curves;
+});
+
+const curvesByName = computed(() => {
+  const map: Record<string, { seriesId: string }> = {};
+  for (const curve of chartSeries.value) {
+    map[curve.name] = { seriesId: curve.seriesId };
+  }
+  return map;
 });
 
 function render() {
@@ -105,7 +123,7 @@ function render() {
     },
     yAxis: {
       type: "value",
-      name: props.field,
+      name: props.fields.length === 1 ? props.fields[0] : "",
       min: values.length ? yMin : undefined,
       max: values.length ? yMax : undefined
     },
@@ -118,8 +136,8 @@ function render() {
         const rows = params
           .filter((param: any) => param.value !== null && param.value !== undefined)
           .map((param: any) => {
-            const series = props.series.find(item => item.path === param.seriesName);
-            const slug = series ? slugs.value[series.id][num] : null;
+            const curve = curvesByName.value[param.seriesName];
+            const slug = curve ? slugs.value[curve.seriesId]?.[num] : null;
             return `${param.marker}${param.seriesName}`
               + `${slug ? ` (${slug})` : ""}: ${param.value}`;
           });
@@ -144,7 +162,7 @@ onBeforeUnmount(() => {
   chart = null;
 });
 
-watch([chartSeries, () => props.field], render);
+watch([chartSeries, () => props.fields], render);
 </script>
 
 <template>
