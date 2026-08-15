@@ -26,6 +26,8 @@ if __name__ == "__main__":
         raise FileExistsError("The workspace already exists at this path!") from e
     ws = Workspace(ws_path)
 
+    metric_names = [fake.word() for _ in range(5)]
+
     os.makedirs("tmp", exist_ok=True)
     for i in range(random.randint(1, 10)):
         repo = Repo(os.path.join(ws_path, f"repo_of_{fake.word('noun')}_{i}"))
@@ -41,13 +43,19 @@ if __name__ == "__main__":
                     for _ in range(random.randint(0, 10)):
                         model.add_metric(
                             Metric(
-                                name=fake.word(),
+                                name=random.choice(metric_names),
                                 value=random.random(),
-                                dataset=fake.word(),
+                                dataset="dataset",
                                 split=random.choice(["train", "val", "test", None]),
                                 direction=random.choice(["up", "down", None]),
                                 interval=random.choice(
-                                    [(random.randint(0, 100), random.randint(0, 100)), None]
+                                    [
+                                        (
+                                            random.randint(0, 100),
+                                            random.randint(0, 100),
+                                        ),
+                                        None,
+                                    ]
                                 ),
                                 extra=None,
                             )

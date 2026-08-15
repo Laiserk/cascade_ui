@@ -4,7 +4,7 @@
       <router-link to="/">
         <img alt="" class="logo" src="../assets/logo.svg">
       </router-link>
-      <router-link class="compare-link" :to="{ name: 'compare' }">
+      <router-link class="nav-link" :to="{ name: 'compare' }">
         <v-icon :icon="mdiScaleBalance" size="24"/>
         <span>Compare</span>
         <v-badge
@@ -14,6 +14,10 @@
           text-color="#ffffff"
           inline
         />
+      </router-link>
+      <router-link class="nav-link" :to="{ name: 'plots' }">
+        <v-icon :icon="mdiChartLine" size="24"/>
+        <span>Plots</span>
       </router-link>
     </div>
     <a href="https://github.com/Oxid15/cascade">
@@ -46,7 +50,7 @@
   gap: 24px;
 }
 
-.compare-link {
+.nav-link {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -60,7 +64,7 @@
 <script lang="ts" setup>
 import IconGitHub from "@/components/icons/IconGithub.vue";
 import { useCompareStore } from "@/utils/CompareStore";
-import { mdiScaleBalance } from "@mdi/js";
+import { mdiChartLine, mdiScaleBalance } from "@mdi/js";
 
 const store = useCompareStore();
 </script>
