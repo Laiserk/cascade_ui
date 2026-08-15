@@ -1,7 +1,7 @@
 import type {Dataset} from "@/models/Dataset";
 
 export default async function GetDataset(repo: string, line: string, ver: string): Promise<Dataset> {
-  return fetch('http://localhost:8000/v1/dataset', {
+  return fetch('/v1/dataset', {
     method: "post",
     headers: {
       "Access-Control-Allow-Origin": "*",

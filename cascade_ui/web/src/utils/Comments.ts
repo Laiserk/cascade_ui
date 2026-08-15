@@ -1,5 +1,5 @@
 export function commentAdd(comment: string, pathParts: string[]) {
-  return fetch('http://localhost:8000/v1/add_comment', {
+  return fetch('/v1/add_comment', {
     method: "post",
     headers: {
       "Access-Control-Allow-Origin": "*",
