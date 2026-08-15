@@ -143,5 +143,42 @@ class AddCommentRequest(pydantic.BaseModel):
     path_parts: List[str]
 
 
+class ItemSearchRequest(pydantic.BaseModel):
+    query: str
+    limit: int = 50
+
+
+class ItemSuggestion(pydantic.BaseModel):
+    path: str
+    repo: str
+    line: str
+    name: str
+    num: int
+    slug: str
+
+
 class ItemSuggestions(pydantic.BaseModel):
-    paths: List[str]
+    items: List[ItemSuggestion]
+    total: int
+
+
+class CompareRequest(pydantic.BaseModel):
+    items: List[str]
+    item_fields: List[str] = []
+
+
+class CompareColumn(pydantic.BaseModel):
+    id: str
+    path: str
+    repo: str
+    line: str
+    name: str
+    num: Optional[int] = None
+    slug: Optional[str] = None
+    meta: Dict[str, Any]
+
+
+class CompareResponse(pydantic.BaseModel):
+    columns: List[CompareColumn]
+    item_fields: List[str]
+    not_found: List[str]

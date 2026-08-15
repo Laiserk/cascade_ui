@@ -21,6 +21,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
 sys.path.append(BASE_DIR)
+from cascade_ui.models import CompareRequest, ItemSearchRequest
 from cascade_ui.server import LinePathSpec, ModelPathSpec, RepoPathSpec, Server
 
 
@@ -47,3 +48,146 @@ def test_model(workspace):
     s = Server(path)
     model = s.model(ModelPathSpec(repo="repo", line="00000", num=0))
     assert len(model.artifacts) == 0
+
+
+def paths_of(suggestions):
+    return [item.path for item in suggestions.items]
+
+
+def test_item_index_skips_data_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    index = s._get_item_index()
+
+    assert paths_of(s.item_search_suggestions(ItemSearchRequest(query=""))) == [
+        item.path for item in index
+    ]
+    assert sorted(item.path for item in index) == [
+        "first/00000/00000",
+        "first/00000/00001",
+        "second/00000/00000",
+    ]
+    assert all(item.slug for item in index)
+    assert [item.num for item in index if item.repo == "first"] == [0, 1]
+
+
+def test_suggestions_head_anchored(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    assert sorted(
+        paths_of(s.item_search_suggestions(ItemSearchRequest(query="fir")))
+    ) == [
+        "first/00000/00000",
+        "first/00000/00001",
+    ]
+    assert paths_of(
+        s.item_search_suggestions(ItemSearchRequest(query="first/00000/00001"))
+    ) == ["first/00000/00001"]
+
+
+def test_suggestions_tail_anchored(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    assert paths_of(
+        s.item_search_suggestions(ItemSearchRequest(query="00000/00001"))
+    ) == ["first/00000/00001"]
+    # A bare number matches model names, but not the line with the same name
+    assert sorted(
+        paths_of(s.item_search_suggestions(ItemSearchRequest(query="00000")))
+    ) == [
+        "first/00000/00000",
+        "second/00000/00000",
+    ]
+
+
+def test_suggestions_do_not_match_mid_segment(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    assert s.item_search_suggestions(ItemSearchRequest(query="irst/00000")).total == 0
+    assert s.item_search_suggestions(ItemSearchRequest(query="0000/00001")).total == 0
+
+
+def test_suggestions_match_slug_substring(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    slug = s._get_item_index()[0].slug
+    middle = slug.split("_")[1]
+
+    suggestions = s.item_search_suggestions(ItemSearchRequest(query=middle))
+
+    assert slug in [item.slug for item in suggestions.items]
+
+
+def test_suggestions_limit_keeps_total(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.item_search_suggestions(ItemSearchRequest(query="", limit=2))
+
+    assert len(suggestions.items) == 2
+    assert suggestions.total == 3
+
+
+def test_compare_resolves_slug_path_and_num(compare_workspace):
+    s = Server(compare_workspace.get_root())
+    slug = s._resolve_item("first/00000/00001").slug
+
+    response = s.compare_item_table(
+        CompareRequest(items=[slug, "second/00000/00000", "first/00000/0"])
+    )
+
+    assert [column.path for column in response.columns] == [
+        "first/00000/00001",
+        "second/00000/00000",
+        "first/00000/00000",
+    ]
+    # The identifier is echoed back as requested so the UI can round-trip the URL
+    assert response.columns[0].id == slug
+    assert response.columns[2].id == "first/00000/0"
+    assert response.not_found == []
+
+
+def test_compare_reports_not_found(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(
+        CompareRequest(items=["no_such_slug", "first/00000/00000"])
+    )
+
+    assert response.not_found == ["no_such_slug"]
+    assert len(response.columns) == 1
+
+
+def test_compare_data_line_items_are_not_comparable(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(CompareRequest(items=["second/00001/00000"]))
+
+    assert response.columns == []
+    assert response.not_found == ["second/00001/00000"]
+
+
+def test_compare_base_fields_and_field_union(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(
+        CompareRequest(
+            items=["first/00000/00000", "second/00000/00000"],
+            item_fields=["params.lr", "params.batch_size"],
+        )
+    )
+
+    for column in response.columns:
+        assert set(column.meta).issuperset(
+            {"name", "slug", "tags", "created_at", "saved_at"}
+        )
+
+    assert response.columns[0].meta["name"] == "00000"
+    assert response.columns[0].meta["params.lr"] == 0.1
+    assert response.columns[0].meta["params.batch_size"] == 32
+    # Requested for every column, missing ones come back as None
+    assert response.columns[1].meta["params.lr"] is None
+
+    # The union spans both models even though neither has all of the params
+    assert {"params.lr", "params.batch_size", "params.momentum"}.issubset(
+        response.item_fields
+    )

@@ -19,6 +19,8 @@ import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
 import CommentFeed from "@/components/CommentFeed.vue";
+import { useCompareStore } from "@/utils/CompareStore";
+import { mdiClose, mdiScaleBalance } from "@mdi/js";
 
 const route = useRoute()
 const router = useRouter()
@@ -129,6 +131,24 @@ function copySlug() {
   }
 }
 
+const compareStore = useCompareStore();
+const compareFeedback = ref("");
+
+const compareId = computed(() => {
+  if (model.value?.slug) return model.value.slug;
+  return [repoName.value, lineName.value, modelNumString.value].join("/");
+});
+
+function toggleCompare() {
+  if (compareStore.has(compareId.value)) {
+    compareStore.remove(compareId.value);
+    compareFeedback.value = "Removed from comparison";
+  } else {
+    compareStore.add(compareId.value);
+    compareFeedback.value = "Added to comparison";
+  }
+}
+
 // Add copy for path
 const copyPathFeedback = ref("");
 function copyPath() {
@@ -214,6 +234,15 @@ function copyPath() {
                         class="copy-feedback"
                         :class="{ visible: copyPathFeedback }"
                       >{{ copyPathFeedback }}</span>
+                    </div>
+                    <div style="margin-top: 8px; margin-bottom: 8px;">
+                      <v-btn
+                        :disabled="!model"
+                        :color="compareStore.has(compareId) ? '#DEB841' : '#D9D7DD'"
+                        :prepend-icon="compareStore.has(compareId) ? mdiClose : mdiScaleBalance"
+                        style="color: #000;"
+                        @click="toggleCompare"
+                      >{{ compareStore.has(compareId) ? "In comparison" : "Add to compare" }}</v-btn>
                     </div>
                     <TagsRow v-if="model" :tags="model.tags"/>
                     <p class="text"> Created: {{ model?.created_at }}</p>
@@ -313,6 +342,16 @@ function copyPath() {
         </div>
       </div>
     </div>
+    <v-snackbar
+      :model-value="compareFeedback.length > 0"
+      :timeout="2000"
+      @update:model-value="compareFeedback = ''"
+    >
+      {{ compareFeedback }}
+      <template #actions>
+        <v-btn variant="text" :to="{ name: 'compare' }">View</v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
