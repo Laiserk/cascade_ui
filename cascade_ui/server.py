@@ -50,9 +50,15 @@ from .models import (
     LinePathSpec,
     LineResponse,
     LineRow,
+    LineSuggestion,
+    LineSuggestions,
     LogResponse,
     ModelPathSpec,
     ModelResponse,
+    PlotPoint,
+    PlotRequest,
+    PlotResponse,
+    PlotSeries,
     RepoCard,
     RepoPathSpec,
     RepoResponse,
@@ -318,26 +324,52 @@ class Server:
             self._timed_cache.add("item_index", index)
         return index
 
-    def _match_item(self, query: str, item: ItemSuggestion) -> bool:
+    def iterate_over_lines(self) -> Iterator[LineSuggestion]:
         """
-        Matches a query against an item path segment-wise.
+        Walks over every line in workspace. Datalines are skipped since
+        they have nothing to plot. Lines have no slugs, they are addressed
+        by their ``repo/line`` path only.
+        """
+
+        for repo_name in self._ws.get_repo_names():
+            repo = self._ws[repo_name]
+            for line_name in repo.get_line_names():
+                line = repo[line_name]
+                line_type = CLS2TYPE.get(type(line))
+                if line_type != "model_line":
+                    continue
+
+                yield LineSuggestion(
+                    path="/".join((repo_name, line_name)),
+                    repo=repo_name,
+                    line=line_name,
+                    type=line_type,
+                    len=len(line),
+                )
+
+    def _get_line_index(self) -> List[LineSuggestion]:
+        index = self._timed_cache.get("line_index")
+        if index is None:
+            index = list(self.iterate_over_lines())
+            self._timed_cache.add("line_index", index)
+        return index
+
+    def _match_path(self, query: str, path: str) -> bool:
+        """
+        Matches a query against a path segment-wise.
 
         The query is either head-anchored or tail-anchored: every segment except
         the last one must match a whole path segment, the last one is a prefix.
         This way ``00003`` finds a model named ``00003`` in any line, but does not
         match a line with the same name, and mid-segment queries do not match.
-        Slugs are matched as substrings.
         """
 
         query = query.strip().strip("/").lower()
         if not query:
             return True
 
-        if item.slug and query in item.slug.lower():
-            return True
-
         parts = query.split("/")
-        segments = item.path.lower().split("/")
+        segments = path.lower().split("/")
         if len(parts) > len(segments):
             return False
 
@@ -348,6 +380,20 @@ class Server:
             return segments[offset + len(parts) - 1].startswith(parts[-1])
 
         return aligned(0) or aligned(len(segments) - len(parts))
+
+    def _match_item(self, query: str, item: ItemSuggestion) -> bool:
+        """
+        Matches a query against an item path, see ``_match_path``.
+        Slugs are matched as substrings.
+        """
+
+        if item.slug and query.strip().strip("/").lower() in item.slug.lower():
+            return True
+
+        return self._match_path(query, item.path)
+
+    def _is_exact_path(self, query: str, path: str) -> bool:
+        return query.strip().strip("/").lower() == path.lower()
 
     def _is_exact_match(self, query: str, item: ItemSuggestion) -> bool:
         query = query.strip().strip("/").lower()
@@ -362,6 +408,28 @@ class Server:
         matched.sort(key=lambda item: not self._is_exact_match(req.query, item))
 
         return ItemSuggestions(items=matched[: req.limit], total=len(matched))
+
+    def line_search_suggestions(self, req: ItemSearchRequest) -> LineSuggestions:
+        matched = [
+            line
+            for line in self._get_line_index()
+            if self._match_path(req.query, line.path)
+        ]
+        matched.sort(key=lambda line: not self._is_exact_path(req.query, line.path))
+
+        return LineSuggestions(items=matched[: req.limit], total=len(matched))
+
+    def _resolve_line(self, identifier: str) -> Optional[LineSuggestion]:
+        """
+        Resolves a ``repo/line`` path into an indexed line
+        """
+
+        identifier = identifier.strip().strip("/")
+        for line in self._get_line_index():
+            if identifier == line.path:
+                return line
+
+        return None
 
     def _resolve_item(self, identifier: str) -> Optional[ItemSuggestion]:
         """
@@ -437,6 +505,66 @@ class Server:
         return CompareResponse(
             columns=columns,
             item_fields=list(sorted(item_fields)),
+            not_found=not_found,
+        )
+
+    def plot_line_series(self, req: PlotRequest) -> PlotResponse:
+        """
+        Reads the requested fields for every item of every requested line.
+
+        The union of plottable fields is collected during the same pass over the
+        metas, so that the client can offer a field selector before any field is
+        actually chosen.
+        """
+
+        series = []
+        not_found = []
+        all_plot_fields = set()
+
+        for identifier in req.lines:
+            suggestion = self._resolve_line(identifier)
+            if suggestion is None:
+                not_found.append(identifier)
+                continue
+
+            line = self._ws[suggestion.repo][suggestion.line]
+
+            points = []
+            plot_fields = set()
+            for i in range(len(line)):
+                try:
+                    meta = line.load_obj_meta(i)
+                except (ZeroMetaError, MetaIOError, FileNotFoundError):
+                    continue
+
+                plot_fields.update(
+                    filter(self._filter_plot_fields, self._get_item_fields(meta))
+                )
+
+                flat = self._prepare_item_dict(meta)
+                points.append(
+                    PlotPoint(
+                        num=i,
+                        slug=meta[0].get("slug"),
+                        values={key: flat.get(key) for key in req.fields},
+                    )
+                )
+
+            all_plot_fields.update(plot_fields)
+            series.append(
+                PlotSeries(
+                    id=identifier,
+                    path=suggestion.path,
+                    repo=suggestion.repo,
+                    line=suggestion.line,
+                    points=points,
+                    plot_fields=list(sorted(plot_fields)),
+                )
+            )
+
+        return PlotResponse(
+            series=series,
+            plot_fields=list(sorted(all_plot_fields)),
             not_found=not_found,
         )
 

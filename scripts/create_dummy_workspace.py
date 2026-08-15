@@ -26,6 +26,8 @@ if __name__ == "__main__":
         raise FileExistsError("The workspace already exists at this path!") from e
     ws = Workspace(ws_path)
 
+    metric_names = [fake.word() for _ in range(5)]
+
     os.makedirs("tmp", exist_ok=True)
     for i in range(random.randint(1, 10)):
         repo = Repo(os.path.join(ws_path, f"repo_of_{fake.word('noun')}_{i}"))
@@ -41,13 +43,19 @@ if __name__ == "__main__":
                     for _ in range(random.randint(0, 10)):
                         model.add_metric(
                             Metric(
-                                name=fake.word(),
+                                name=random.choice(metric_names),
                                 value=random.random(),
-                                dataset=fake.word(),
+                                dataset="dataset",
                                 split=random.choice(["train", "val", "test", None]),
                                 direction=random.choice(["up", "down", None]),
                                 interval=random.choice(
-                                    [(random.randint(0, 100), random.randint(0, 100)), None]
+                                    [
+                                        (
+                                            random.randint(0, 100),
+                                            random.randint(0, 100),
+                                        ),
+                                        None,
+                                    ]
                                 ),
                                 extra=None,
                             )
@@ -91,5 +99,76 @@ if __name__ == "__main__":
                     line.save(ds)
             else:
                 raise Exception()
+
+    repo = Repo(os.path.join(ws_path, "test"))
+    for i in range(10):
+        line = repo.add_line(line_type="model")
+
+        train_loss = random.random()
+        test_loss = random.random()
+
+        for i in range(random.randint(90, 100)):
+            model = BasicModel()
+            model.describe(fake.text())
+
+            model.add_metric(
+                Metric(
+                    name="loss",
+                    value=train_loss,
+                    dataset="dataset",
+                    split="train",
+                    direction="down",
+                    extra=None,
+                )
+            )
+
+            model.add_metric(
+                Metric(
+                    name="loss",
+                    value=test_loss,
+                    dataset="dataset",
+                    split="test",
+                    direction="down",
+                    extra=None,
+                )
+            )
+
+            train_loss = train_loss * 0.9
+            test_loss = test_loss * 0.98 + 0.001
+
+            line.save(model)
+
+    line = repo.add_line("long_line", line_type="model")
+
+    train_loss = random.random()
+    test_loss = random.random()
+
+    for i in range(1000):
+        model = BasicModel()
+        model.describe(fake.text())
+
+        model.add_metric(
+            Metric(
+                name="loss",
+                value=random.random(),
+                dataset="dataset",
+                split="train",
+                direction="down",
+                extra=None,
+            )
+        )
+
+        model.add_metric(
+            Metric(
+                name="loss",
+                value=random.random(),
+                dataset="dataset",
+                split="test",
+                direction="down",
+                extra=None,
+            )
+        )
+
+        line.save(model)
 
     shutil.rmtree("tmp")

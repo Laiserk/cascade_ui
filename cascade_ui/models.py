@@ -183,3 +183,42 @@ class CompareResponse(pydantic.BaseModel):
     columns: List[CompareColumn]
     item_fields: List[str]
     not_found: List[str]
+
+
+class LineSuggestion(pydantic.BaseModel):
+    path: str
+    repo: str
+    line: str
+    type: str
+    len: int
+
+
+class LineSuggestions(pydantic.BaseModel):
+    items: List[LineSuggestion]
+    total: int
+
+
+class PlotRequest(pydantic.BaseModel):
+    lines: List[str]
+    fields: List[str] = []
+
+
+class PlotPoint(pydantic.BaseModel):
+    num: int
+    slug: Optional[str] = None
+    values: Dict[str, Any]
+
+
+class PlotSeries(pydantic.BaseModel):
+    id: str
+    path: str
+    repo: str
+    line: str
+    points: List[PlotPoint]
+    plot_fields: List[str]
+
+
+class PlotResponse(pydantic.BaseModel):
+    series: List[PlotSeries]
+    plot_fields: List[str]
+    not_found: List[str]

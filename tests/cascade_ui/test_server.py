@@ -21,7 +21,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
 sys.path.append(BASE_DIR)
-from cascade_ui.models import CompareRequest, ItemSearchRequest
+from cascade_ui.models import CompareRequest, ItemSearchRequest, PlotRequest
 from cascade_ui.server import LinePathSpec, ModelPathSpec, RepoPathSpec, Server
 
 
@@ -276,3 +276,118 @@ def test_compare_base_fields_and_field_union(compare_workspace):
     assert {"params.lr", "params.batch_size", "params.momentum"}.issubset(
         response.item_fields
     )
+
+
+def test_line_index_skips_data_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # second/00001 is the data line of the fixture and has nothing to plot
+    assert sorted(line.path for line in s._get_line_index()) == [
+        "first/00000",
+        "second/00000",
+    ]
+    assert all(line.type == "model_line" for line in s._get_line_index())
+
+
+def test_line_suggestions_report_length(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    lines = {
+        line.path: line
+        for line in s.line_search_suggestions(ItemSearchRequest(query="")).items
+    }
+
+    assert lines["first/00000"].len == 2
+    assert lines["second/00000"].len == 1
+    assert lines["first/00000"].repo == "first"
+    assert lines["first/00000"].line == "00000"
+
+
+def test_line_suggestions_anchoring(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # Head-anchored on the repo, tail-anchored on the line name
+    assert paths_of(s.line_search_suggestions(ItemSearchRequest(query="fir"))) == [
+        "first/00000"
+    ]
+    assert sorted(
+        paths_of(s.line_search_suggestions(ItemSearchRequest(query="00000")))
+    ) == ["first/00000", "second/00000"]
+    assert paths_of(
+        s.line_search_suggestions(ItemSearchRequest(query="first/00000"))
+    ) == ["first/00000"]
+
+    # Mid-segment queries must not match, same rule as item search
+    assert s.line_search_suggestions(ItemSearchRequest(query="irst")).total == 0
+    assert s.line_search_suggestions(ItemSearchRequest(query="0000/00000")).total == 0
+
+
+def test_line_suggestions_limit_keeps_total(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.line_search_suggestions(ItemSearchRequest(query="", limit=1))
+
+    assert len(suggestions.items) == 1
+    assert suggestions.total == 2
+
+
+def test_plot_series_points_follow_the_line(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(
+        PlotRequest(lines=["first/00000"], fields=["params.lr"])
+    )
+
+    assert response.not_found == []
+    assert len(response.series) == 1
+
+    series = response.series[0]
+    assert series.id == "first/00000"
+    assert series.path == "first/00000"
+    assert [point.num for point in series.points] == [0, 1]
+    assert [point.values["params.lr"] for point in series.points] == [0.1, 0.01]
+    assert all(point.slug for point in series.points)
+
+
+def test_plot_series_field_union_and_missing_values(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(
+        PlotRequest(
+            lines=["first/00000", "second/00000"],
+            fields=["params.lr", "params.momentum"],
+        )
+    )
+
+    # The union spans both lines even though neither line has all of the params
+    assert {"params.lr", "params.batch_size", "params.momentum"}.issubset(
+        response.plot_fields
+    )
+    # Per line the fields are only the ones that line actually has
+    assert "params.momentum" not in response.series[0].plot_fields
+    assert "params.momentum" in response.series[1].plot_fields
+
+    # A field the line does not have comes back as None rather than raising
+    assert response.series[0].points[0].values["params.momentum"] is None
+    assert response.series[1].points[0].values["params.lr"] is None
+
+
+def test_plot_series_fields_are_available_before_one_is_chosen(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(PlotRequest(lines=["first/00000"]))
+
+    assert response.series[0].points[0].values == {}
+    assert "params.lr" in response.plot_fields
+
+
+def test_plot_series_reports_unknown_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(
+        PlotRequest(lines=["first/00000", "no/such_line", "second/00001"])
+    )
+
+    # The data line is not in the index, so it is not plottable either
+    assert response.not_found == ["no/such_line", "second/00001"]
+    assert [series.id for series in response.series] == ["first/00000"]

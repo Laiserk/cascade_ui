@@ -1,7 +1,7 @@
 import type {Repo} from "@/models/Repo";
 
 export default async function GetRepo(path: string): Promise<Repo> {
-  return fetch('http://localhost:8000/v1/repo', {
+  return fetch('/v1/repo', {
     method: "post",
     headers: {
       "Access-Control-Allow-Origin": "*",

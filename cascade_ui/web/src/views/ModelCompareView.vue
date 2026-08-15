@@ -74,10 +74,13 @@ async function load() {
 
   const requests: Promise<void>[] = [];
 
-  // New columns arrive with every field that is currently selected
+  // New columns arrive with every field fetched so far, not just the selected
+  // ones, otherwise a model removed and re-added while a field is deselected
+  // would be missing its value once that field is selected again
   if (missingItems.length) {
+    const fields = Array.from(new Set(fetchedFields.value.concat(selectedFields.value)));
     requests.push(
-      GetCompareTable(missingItems, selectedFields.value).then(response => {
+      GetCompareTable(missingItems, fields).then(response => {
         for (const column of response.columns) {
           columnCache.value[column.id] = column;
         }
@@ -126,8 +129,6 @@ async function reload() {
   await load();
 }
 
-// Staging is only picked up when entering the view. Later on an empty list
-// means the user emptied it, and must not be refilled from the store
 let hydrated = false;
 
 // The URL is the source of truth, every mutation goes through it
@@ -138,8 +139,6 @@ async function syncFromQuery() {
   hydrated = true;
 
   if (firstSync && !queryItems.length && store.items.value.length) {
-    // Arriving with models staged from model pages - put them into the URL
-    // right away so that the comparison becomes shareable
     updateQuery(store.items.value, queryFields);
     return;
   }
