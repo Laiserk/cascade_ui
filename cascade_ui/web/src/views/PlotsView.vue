@@ -14,6 +14,7 @@ const router = useRouter();
 
 const lines = ref<string[]>([]);
 const plots = ref<string[][]>([[]]);
+const scales = ref<string[]>(["linear"]);
 const loading = ref(false);
 const pending = ref(0);
 
@@ -58,13 +59,29 @@ function parsePlots(value: unknown): string[][] {
   return parsed.length ? parsed : [[]];
 }
 
-function updateQuery(nextLines: string[], nextPlots: string[][]) {
+function alignScales(values: string[], plotCount: number): string[] {
+  const aligned = values.slice(0, plotCount).map(value => (value === "log" ? "log" : "linear"));
+  while (aligned.length < plotCount) aligned.push("linear");
+  return aligned;
+}
+
+function parseScales(value: unknown, plotCount: number): string[] {
+  const raw = Array.isArray(value) ? value : [value];
+  return alignScales(raw.filter((part): part is string => typeof part === "string"), plotCount);
+}
+
+function updateQuery(nextLines: string[], nextPlots: string[][], nextScales: string[]) {
   const query: Record<string, string | string[]> = {};
   if (nextLines.length) query.lines = nextLines.join(",");
 
   const encoded = nextPlots.map(plot => plot.join(","));
   if (encoded.length > 1 || encoded[0]) {
     query.metrics = encoded;
+  }
+
+  const alignedScales = alignScales(nextScales, nextPlots.length);
+  if (alignedScales.includes("log")) {
+    query.scales = alignedScales;
   }
 
   router.replace({ name: "plots", query: query });
@@ -150,6 +167,7 @@ async function reload() {
 async function syncFromQuery() {
   lines.value = parseQuery(route.query.lines);
   plots.value = parsePlots(route.query.metrics);
+  scales.value = parseScales(route.query.scales, plots.value.length);
   await load();
 }
 
@@ -157,39 +175,59 @@ watch(() => route.query, syncFromQuery, { immediate: true });
 
 function onSelect(id: string) {
   if (lines.value.includes(id)) return;
-  updateQuery(lines.value.concat([id]), plots.value);
+  updateQuery(lines.value.concat([id]), plots.value, scales.value);
 }
 
 function onRemove(id: string) {
-  updateQuery(lines.value.filter(line => line !== id), plots.value);
+  updateQuery(lines.value.filter(line => line !== id), plots.value, scales.value);
 }
 
 function removeAllMissing() {
   updateQuery(
     lines.value.filter(line => !notFound.value.includes(line)),
-    plots.value
+    plots.value,
+    scales.value
   );
 }
 
 function clearAll() {
-  updateQuery([], plots.value);
+  updateQuery([], plots.value, scales.value);
 }
 
 function onPlotMetricsUpdate(plotIndex: number, fields: string[]) {
   updateQuery(
     lines.value,
-    plots.value.map((plot, index) => (index === plotIndex ? fields : plot))
+    plots.value.map((plot, index) => (index === plotIndex ? fields : plot)),
+    scales.value
+  );
+}
+
+function onPlotScaleUpdate(plotIndex: number, isLog: boolean) {
+  updateQuery(
+    lines.value,
+    plots.value,
+    scales.value.map((scale, index) => (index === plotIndex ? (isLog ? "log" : "linear") : scale))
   );
 }
 
 function onAddPlot() {
   const last = plots.value[plots.value.length - 1] ?? [];
-  updateQuery(lines.value, plots.value.concat([last.slice()]));
+  const lastScale = scales.value[scales.value.length - 1] ?? "linear";
+  updateQuery(
+    lines.value,
+    plots.value.concat([last.slice()]),
+    scales.value.concat([lastScale])
+  );
 }
 
 function onRemovePlot(plotIndex: number) {
   const kept = plots.value.filter((_, index) => index !== plotIndex);
-  updateQuery(lines.value, kept.length ? kept : [[]]);
+  const keptScales = scales.value.filter((_, index) => index !== plotIndex);
+  updateQuery(
+    lines.value,
+    kept.length ? kept : [[]],
+    keptScales.length ? keptScales : ["linear"]
+  );
 }
 </script>
 
@@ -254,25 +292,37 @@ function onRemovePlot(plotIndex: number) {
       class="plot-block"
     >
       <div class="plot-controls">
-        <v-select
-          :model-value="plot"
-          :items="plotFields"
-          label="Select metrics"
-          class="metric-select"
-          density="compact"
-          variant="outlined"
-          :menu-props="{ maxHeight: '300px', closeOnContentClick: false }"
-          multiple
-          chips
-          closable-chips
-          hide-details
-          @update:model-value="fields => onPlotMetricsUpdate(plotIndex, fields)"
-        />
+        <div class="plot-fields">
+          <v-select
+            :model-value="plot"
+            :items="plotFields"
+            label="Select metrics"
+            class="metric-select"
+            density="compact"
+            variant="outlined"
+            :menu-props="{ maxHeight: '300px', closeOnContentClick: false }"
+            multiple
+            chips
+            closable-chips
+            hide-details
+            @update:model-value="fields => onPlotMetricsUpdate(plotIndex, fields)"
+          />
+          <v-switch
+            :model-value="scales[plotIndex] === 'log'"
+            label="Log scale"
+            class="scale-switch"
+            density="compact"
+            color="#177E89"
+            hide-details
+            @update:model-value="isLog => onPlotScaleUpdate(plotIndex, Boolean(isLog))"
+          />
+        </div>
         <v-btn
           v-if="plots.length > 1"
           icon
           variant="text"
           size="small"
+          class="remove-plot"
           @click="onRemovePlot(plotIndex)"
         >
           <v-icon :icon="mdiClose"/>
@@ -284,6 +334,7 @@ function onRemovePlot(plotIndex: number) {
         v-if="series.length && plot.length"
         :series="series"
         :fields="plot"
+        :log-scale="scales[plotIndex] === 'log'"
       />
       <div v-else-if="!loading" class="empty">
         Select a metric to plot it against the model nums of every selected line.
@@ -295,9 +346,6 @@ function onRemovePlot(plotIndex: number) {
       <v-btn variant="text" size="small" :prepend-icon="mdiPlus" @click="onAddPlot">
         New plot
       </v-btn>
-      <span class="add-plot-hint">
-        Metrics of different magnitudes are easier to read on separate plots
-      </span>
     </div>
 
     <div v-if="!plotFields.length && !loading" class="empty">
@@ -380,13 +428,21 @@ function onRemovePlot(plotIndex: number) {
   margin-top: 24px;
 }
 
-.add-plot-hint {
-  color: #555;
-  font-size: 13px;
+.plot-fields {
+  flex: 1;
+  min-width: 0;
 }
 
 .metric-select {
-  max-width: 300px;
+  margin-top: 24px;
+}
+
+.scale-switch {
+  margin-top: 4px;
+  margin-left: 10px;
+}
+
+.remove-plot {
   margin-top: 24px;
 }
 

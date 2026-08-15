@@ -4,26 +4,17 @@ import * as echarts from "echarts";
 import type { PlotSeries } from "@/models/Plots";
 import { seriesColor, metricShade } from "@/utils/PlotColors";
 
-const props = defineProps<{ series: PlotSeries[], fields: string[] }>();
+const props = defineProps<{ series: PlotSeries[], fields: string[], logScale?: boolean }>();
 
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
 let observer: ResizeObserver | null = null;
 
-function niceAxisLimits(min: number, max: number) {
-  const span = max - min;
-  if (span === 0) return [min, max];
-  const exponent = Math.floor(Math.log10(span));
-  const fraction = span / Math.pow(10, exponent);
-  let niceFraction;
-  if (fraction <= 1) niceFraction = 1;
-  else if (fraction <= 2) niceFraction = 2;
-  else if (fraction <= 5) niceFraction = 5;
-  else niceFraction = 10;
-  const step = niceFraction * Math.pow(10, exponent) / 5;
-  const niceMin = Math.floor(min / step) * step;
-  const niceMax = Math.ceil(max / step) * step;
-  return [niceMin, niceMax];
+function resetZoom() {
+  if (!chart) return;
+  const models = (chart as any).getModel().queryComponents({ mainType: "dataZoom" });
+  const batch = models.map((model: any) => ({ dataZoomId: model.id, start: 0, end: 100 }));
+  if (batch.length) chart.dispatchAction({ type: "dataZoom", batch: batch });
 }
 
 function numString(num: number) {
@@ -72,7 +63,9 @@ const chartSeries = computed(() => {
         connectNulls: true, // Metrics can be recorded not every step, but we should still connect them
         data: categories.value.map(num => {
           const value = byNum[num];
-          return typeof value === "number" && !isNaN(value) ? value : null;
+          if (typeof value !== "number" || isNaN(value)) return null;
+          if (props.logScale && value <= 0) return null;
+          return value;
         }),
         lineStyle: { color: color },
         itemStyle: { color: color }
@@ -80,6 +73,20 @@ const chartSeries = computed(() => {
     }
   }
   return curves;
+});
+
+const droppedPoints = computed(() => {
+  if (!props.logScale) return 0;
+  let count = 0;
+  for (const series of props.series) {
+    for (const point of series.points) {
+      for (const field of props.fields) {
+        const value = point.values[field];
+        if (typeof value === "number" && !isNaN(value) && value <= 0) count += 1;
+      }
+    }
+  }
+  return count;
 });
 
 const curvesByName = computed(() => {
@@ -93,22 +100,6 @@ const curvesByName = computed(() => {
 function render() {
   if (!chart) return;
 
-  const values: number[] = [];
-  for (const series of chartSeries.value) {
-    for (const value of series.data) {
-      if (value !== null) values.push(value);
-    }
-  }
-
-  let yMin = Math.min(...values);
-  let yMax = Math.max(...values);
-  if (values.length > 0 && yMin !== yMax) {
-    [yMin, yMax] = niceAxisLimits(yMin, yMax);
-  } else if (values.length > 0) {
-    yMin -= 0.05 * Math.abs(yMin);
-    yMax += 0.05 * Math.abs(yMax);
-  }
-
   chart.setOption({
     legend: {
       type: "scroll",
@@ -116,16 +107,34 @@ function render() {
       data: chartSeries.value.map(series => series.name)
     },
     grid: { bottom: 60 },
+    toolbox: {
+      iconStyle: { borderColor: "#177E89" },
+      emphasis: { iconStyle: { borderColor: "#084C61" } },
+      feature: {
+        dataZoom: {
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          title: { zoom: "Box zoom", back: "Undo zoom" }
+        },
+        // echarts only renders user-defined features whose name starts with "my"
+        myResetZoom: {
+          show: true,
+          title: "Reset zoom",
+          // Corner brackets, drawn in the same 0..60 box the built-in icons use
+          icon: "M2,20V2H20 M40,2H58V20 M58,40V58H40 M20,58H2V40",
+          onclick: resetZoom
+        }
+      }
+    },
     xAxis: {
       type: "category",
       data: categories.value,
       name: "Model Num"
     },
     yAxis: {
-      type: "value",
-      name: props.fields.length === 1 ? props.fields[0] : "",
-      min: values.length ? yMin : undefined,
-      max: values.length ? yMax : undefined
+      type: props.logScale ? "log" : "value",
+      scale: true,
+      name: props.fields.length === 1 ? props.fields[0] : ""
     },
     series: chartSeries.value,
     tooltip: {
@@ -162,11 +171,16 @@ onBeforeUnmount(() => {
   chart = null;
 });
 
-watch([chartSeries, () => props.fields], render);
+watch([chartSeries, () => props.fields, () => props.logScale], render);
 </script>
 
 <template>
-  <div ref="chartRef" class="chart"></div>
+  <div>
+    <div ref="chartRef" class="chart"></div>
+    <div v-if="droppedPoints" class="log-note">
+      {{ droppedPoints }} value(s) at or below zero are hidden, a log axis cannot place them.
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -174,5 +188,10 @@ watch([chartSeries, () => props.fields], render);
   width: 100%;
   height: 400px;
   margin-top: 24px;
+}
+
+.log-note {
+  color: #555;
+  font-size: 13px;
 }
 </style>
