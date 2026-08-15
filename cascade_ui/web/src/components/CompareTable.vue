@@ -43,9 +43,11 @@ const allFields = computed(() => {
 function valueOf(column: CompareColumn, field: string) {
   return column.meta ? column.meta[field] : undefined;
 }
+const canCompare = computed(() => props.columns.length > 1);
+const hidingIdentical = computed(() => hideIdentical.value && canCompare.value);
 
 function differs(field: string): boolean {
-  if (props.columns.length < 2) return false;
+  if (!canCompare.value) return false;
   const first = JSON.stringify(valueOf(props.columns[0], field) ?? null);
   return props.columns.some(
     column => JSON.stringify(valueOf(column, field) ?? null) !== first
@@ -55,7 +57,7 @@ function differs(field: string): boolean {
 const rows = computed(() => {
   return allFields.value
     .map(field => ({ field: field, differs: differs(field) }))
-    .filter(row => !hideIdentical.value || row.differs);
+    .filter(row => !hidingIdentical.value || row.differs);
 });
 
 function isTags(field: string, value: any): boolean {
@@ -91,6 +93,8 @@ function display(value: any): string {
       </v-select>
       <v-switch
         v-model="hideIdentical"
+        :disabled="!canCompare"
+        :title="canCompare ? '' : 'Add a second model to compare against'"
         label="Hide identical rows"
         color="#084C61"
         hide-details
