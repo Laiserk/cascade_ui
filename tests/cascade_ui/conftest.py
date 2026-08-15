@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from cascade.data import Wrapper
 from cascade.models import BasicModel
 from cascade.workspaces import Workspace
 from pytest import fixture
@@ -28,5 +29,31 @@ def workspace(tmp_path) -> Workspace:
     model = BasicModel()
 
     line.save(model)
+
+    return ws
+
+
+@fixture
+def compare_workspace(tmp_path) -> Workspace:
+    """
+    Two repos with several models each and one data line
+    """
+
+    tmp_path = str(tmp_path)
+    ws = Workspace(tmp_path)
+
+    first = ws.add_repo("first")
+    line = first.add_line(model_cls=BasicModel)
+    for lr in (0.1, 0.01):
+        model = BasicModel(lr=lr, batch_size=32)
+        line.save(model)
+
+    second = ws.add_repo("second")
+    line = second.add_line(model_cls=BasicModel)
+    model = BasicModel(batch_size=32, momentum=0.9)
+    line.save(model)
+
+    data_line = second.add_line(line_type="data")
+    data_line.save(Wrapper([0, 1, 2]))
 
     return ws

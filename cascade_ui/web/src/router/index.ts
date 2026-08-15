@@ -5,6 +5,7 @@ import ModelLineView from '../views/ModelLineView.vue'
 import DataLineView from '../views/DataLineView.vue'
 import ModelView from '../views/ModelView.vue'
 import DatasetView from '../views/DatasetView.vue'
+import ModelCompareView from '../views/ModelCompareView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,6 +14,11 @@ const router = createRouter({
       path: '/',
       name: 'main',
       component: WorkspaceView
+    },
+    {
+      path: '/compare',
+      name: 'compare',
+      component: ModelCompareView
     },
     {
         path: '/repos/:repoName',
