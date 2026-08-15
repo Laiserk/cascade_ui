@@ -100,4 +100,42 @@ if __name__ == "__main__":
             else:
                 raise Exception()
 
+    repo = Repo(os.path.join(ws_path, "test"))
+    for i in range(10):
+        line = repo.add_line(line_type="model")
+
+        train_loss = random.random()
+        test_loss = random.random()
+
+        for i in range(random.randint(90, 100)):
+            model = BasicModel()
+            model.describe(fake.text())
+
+            model.add_metric(
+                Metric(
+                    name="loss",
+                    value=train_loss,
+                    dataset="dataset",
+                    split="train",
+                    direction="down",
+                    extra=None,
+                )
+            )
+
+            model.add_metric(
+                Metric(
+                    name="loss",
+                    value=test_loss,
+                    dataset="dataset",
+                    split="test",
+                    direction="down",
+                    extra=None,
+                )
+            )
+
+            train_loss = train_loss * 0.9
+            test_loss = test_loss * 0.98 + 0.001
+
+            line.save(model)
+
     shutil.rmtree("tmp")
