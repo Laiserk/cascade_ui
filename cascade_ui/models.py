@@ -154,7 +154,7 @@ class ItemSuggestion(pydantic.BaseModel):
     line: str
     name: str
     num: int
-    slug: str
+    slug: Optional[str] = None
 
 
 class ItemSuggestions(pydantic.BaseModel):
@@ -173,9 +173,10 @@ class CompareColumn(pydantic.BaseModel):
     repo: str
     line: str
     name: str
-    num: Optional[int] = None
+    num: int
     slug: Optional[str] = None
     meta: Dict[str, Any]
+    available_fields: List[str]
 
 
 class CompareResponse(pydantic.BaseModel):

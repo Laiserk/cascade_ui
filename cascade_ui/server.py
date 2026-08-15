@@ -267,14 +267,20 @@ class Server:
             plot_fields=list(sorted(filter(self._filter_plot_fields, item_fields))),
         )
 
-    def _read_slug(self, repo_name: str, line_name: str, item_name: str) -> str:
+    def _read_slug(
+        self, repo_name: str, line_name: str, item_name: str
+    ) -> Optional[str]:
         slug_path = os.path.join(self._ws_name, repo_name, line_name, item_name, "SLUG")
-        with open(slug_path, "r") as f:
-            return f.read().strip()
+        try:
+            with open(slug_path, "r") as f:
+                return f.read().strip() or None
+        except OSError:
+            return None
 
     def iterate_over_items(self) -> Iterator[ItemSuggestion]:
         """
-        Walks over every model in workspace. Datalines are skipped for now
+        Walks over every model in workspace. Datalines are skipped for now.
+        Models without slugs are reported.
         """
 
         for repo_name in self._ws.get_repo_names():
@@ -284,14 +290,25 @@ class Server:
                 if CLS2TYPE.get(type(line)) != "model_line":
                     continue
                 for item_name in line.get_item_names():
-                    num = int(item_name)
+                    try:
+                        num = int(item_name)
+                    except ValueError:
+                        continue
+
+                    slug = self._read_slug(repo_name, line_name, item_name)
+                    if slug is None:
+                        warnings.warn(
+                            f"No slug found for {repo_name}/{line_name}/{item_name},"
+                            " it will be addressed by its path"
+                        )
+
                     yield ItemSuggestion(
                         path="/".join((repo_name, line_name, item_name)),
                         repo=repo_name,
                         line=line_name,
                         name=item_name,
                         num=num,
-                        slug=self._read_slug(repo_name, line_name, item_name),
+                        slug=slug,
                     )
 
     def _get_item_index(self) -> List[ItemSuggestion]:
@@ -354,8 +371,9 @@ class Server:
         identifier = identifier.strip().strip("/")
         index = self._get_item_index()
 
+        lowered = identifier.lower()
         for item in index:
-            if identifier == item.path or identifier == item.slug:
+            if identifier == item.path or (item.slug and lowered == item.slug.lower()):
                 return item
 
         parts = identifier.split("/")
@@ -385,19 +403,15 @@ class Server:
                 not_found.append(identifier)
                 continue
 
-            path_spec = item.num if item.num is not None else item.slug
-            if path_spec is None:
-                not_found.append(identifier)
-                continue
-
             line = self._ws[item.repo][item.line]
             try:
-                meta = line.load_obj_meta(path_spec)
+                meta = line.load_obj_meta(item.num)
             except (ZeroMetaError, MetaIOError, FileNotFoundError):
                 not_found.append(identifier)
                 continue
 
-            item_fields.update(self._get_item_fields(meta))
+            available_fields = sorted(self._get_item_fields(meta))
+            item_fields.update(available_fields)
 
             flat = self._prepare_item_dict(meta)
             meta = {key: flat.get(key) for key in ITEM_BASE_FIELDS}
@@ -416,6 +430,7 @@ class Server:
                     num=item.num,
                     slug=item.slug,
                     meta=meta,
+                    available_fields=available_fields,
                 )
             )
 

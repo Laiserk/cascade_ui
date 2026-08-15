@@ -65,7 +65,11 @@ request("");
     @update:model-value="onSelect"
   >
     <template #item="{ props, item }">
-      <v-list-item v-bind="props" :title="item.raw.path" :subtitle="item.raw.slug ?? ''"/>
+      <v-list-item
+        v-bind="props"
+        :title="item.raw.path"
+        :subtitle="item.raw.slug ?? 'no slug, will be addressed by path'"
+      />
     </template>
     <template #no-data>
       <v-list-item title="No models match this query"/>

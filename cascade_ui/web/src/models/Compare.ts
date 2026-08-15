@@ -4,7 +4,7 @@ export interface ItemSuggestion {
     line: string;
     name: string;
     num: number;
-    slug: string;
+    slug: string | null;
 }
 
 export interface ItemSuggestions {
@@ -19,8 +19,9 @@ export interface CompareColumn {
     line: string;
     name: string;
     num: number;
-    slug: string;
+    slug: string | null;
     meta: Record<string, any>;
+    available_fields: string[];
 }
 
 export interface CompareResponse {
@@ -30,5 +31,5 @@ export interface CompareResponse {
 }
 
 export function itemId(item: ItemSuggestion | CompareColumn): string {
-    return item.slug;
+    return item.slug ? item.slug : item.path;
 }

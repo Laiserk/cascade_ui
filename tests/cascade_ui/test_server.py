@@ -146,6 +146,91 @@ def test_compare_resolves_slug_path_and_num(compare_workspace):
     assert response.not_found == []
 
 
+def test_slugless_model_stays_usable(compare_workspace):
+    """
+    A model whose SLUG file failed to be written is still a model. It must not
+    take down the index for the whole workspace
+    """
+
+    root = compare_workspace.get_root()
+    os.remove(os.path.join(root, "first", "00000", "00001", "SLUG"))
+
+    s = Server(root)
+
+    suggestions = s.item_search_suggestions(ItemSearchRequest(query=""))
+    assert "first/00000/00001" in paths_of(suggestions)
+    assert suggestions.total == 3
+
+    slugless = [item for item in suggestions.items if item.path == "first/00000/00001"][0]
+    assert slugless.slug is None
+    assert slugless.num == 1
+
+    # It has no slug to be addressed by, so the path has to keep working
+    response = s.compare_item_table(CompareRequest(items=["first/00000/00001"]))
+    assert response.not_found == []
+    assert response.columns[0].slug is None
+    assert response.columns[0].num == 1
+
+
+def test_items_that_are_not_models_are_skipped(compare_workspace):
+    root = compare_workspace.get_root()
+    os.makedirs(os.path.join(root, "first", "00000", "not_a_model"))
+
+    s = Server(root)
+
+    assert "first/00000/not_a_model" not in paths_of(
+        s.item_search_suggestions(ItemSearchRequest(query=""))
+    )
+
+
+def test_compare_resolves_slug_case_insensitively(compare_workspace):
+    """
+    Slugs come from a lowercase wordlist, so a hand typed URL should still work
+    """
+
+    s = Server(compare_workspace.get_root())
+    slug = s._resolve_item("first/00000/00000").slug
+
+    response = s.compare_item_table(CompareRequest(items=[slug.upper()]))
+
+    assert response.not_found == []
+    assert response.columns[0].path == "first/00000/00000"
+
+
+def test_compare_keeps_paths_case_sensitive(compare_workspace):
+    """
+    Unlike slugs, paths are directory names where the case is meaningful
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(CompareRequest(items=["FIRST/00000/00000"]))
+
+    assert response.columns == []
+    assert response.not_found == ["FIRST/00000/00000"]
+
+
+def test_compare_reports_available_fields_per_column(compare_workspace):
+    """
+    The client rebuilds the row picker from the columns it holds, so each one
+    has to carry its own fields and not just the union
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(
+        CompareRequest(items=["first/00000/00000", "second/00000/00000"])
+    )
+
+    first, second = response.columns
+    assert "params.lr" in first.available_fields
+    assert "params.lr" not in second.available_fields
+    assert "params.momentum" in second.available_fields
+
+    union = set(first.available_fields) | set(second.available_fields)
+    assert union == set(response.item_fields)
+
+
 def test_compare_reports_not_found(compare_workspace):
     s = Server(compare_workspace.get_root())
 

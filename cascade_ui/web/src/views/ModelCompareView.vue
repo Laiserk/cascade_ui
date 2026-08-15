@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import NavBar from "../components/NavBar.vue";
 import ModelSearchBar from "@/components/ModelSearchBar.vue";
@@ -14,10 +14,34 @@ const store = useCompareStore();
 
 const items = ref<string[]>([]);
 const selectedFields = ref<string[]>([]);
-const columns = ref<CompareColumn[]>([]);
-const availableFields = ref<string[]>([]);
-const notFound = ref<string[]>([]);
 const loading = ref(false);
+const pending = ref(0);
+
+// Columns are cached by identifier so that adding one does not re-read the
+// meta of the models already on screen. The invariant is that every cached
+// column carries every field in fetchedFields
+const columnCache = ref<Record<string, CompareColumn>>({});
+const notFoundCache = ref<string[]>([]);
+const fetchedFields = ref<string[]>([]);
+
+const columns = computed(() => {
+  // Ordering follows the URL rather than the response
+  return items.value
+    .map(id => columnCache.value[id])
+    .filter((column): column is CompareColumn => Boolean(column));
+});
+
+const notFound = computed(() => items.value.filter(id => notFoundCache.value.includes(id)));
+
+const availableFields = computed(() => {
+  const fields = new Set<string>(selectedFields.value);
+  for (const column of columns.value) {
+    for (const field of column.available_fields) {
+      fields.add(field);
+    }
+  }
+  return Array.from(fields).sort();
+});
 
 function parseQuery(value: unknown): string[] {
   if (typeof value !== "string" || !value) return [];
@@ -31,19 +55,75 @@ function updateQuery(nextItems: string[], nextFields: string[]) {
   router.replace({ name: "compare", query: query });
 }
 
+function evictDropped() {
+  const kept: Record<string, CompareColumn> = {};
+  for (const id of items.value) {
+    if (columnCache.value[id]) kept[id] = columnCache.value[id];
+  }
+  columnCache.value = kept;
+  notFoundCache.value = notFoundCache.value.filter(id => items.value.includes(id));
+}
+
 async function load() {
-  if (!items.value.length) {
-    columns.value = [];
-    availableFields.value = [];
-    notFound.value = [];
+  evictDropped();
+
+  const known = (id: string) => Boolean(columnCache.value[id]) || notFoundCache.value.includes(id);
+  const missingItems = items.value.filter(id => !known(id));
+  const newFields = selectedFields.value.filter(field => !fetchedFields.value.includes(field));
+  const cachedItems = items.value.filter(id => Boolean(columnCache.value[id]));
+
+  const requests: Promise<void>[] = [];
+
+  // New columns arrive with every field that is currently selected
+  if (missingItems.length) {
+    requests.push(
+      GetCompareTable(missingItems, selectedFields.value).then(response => {
+        for (const column of response.columns) {
+          columnCache.value[column.id] = column;
+        }
+        notFoundCache.value = Array.from(
+          new Set(notFoundCache.value.concat(response.not_found))
+        );
+      })
+    );
+  }
+
+  // Newly selected fields are backfilled into the columns already cached
+  if (newFields.length && cachedItems.length) {
+    requests.push(
+      GetCompareTable(cachedItems, newFields).then(response => {
+        for (const column of response.columns) {
+          const cached = columnCache.value[column.id];
+          if (cached) {
+            cached.meta = { ...cached.meta, ...column.meta };
+          }
+        }
+      })
+    );
+  }
+
+  if (!requests.length) {
+    fetchedFields.value = Array.from(new Set(fetchedFields.value.concat(selectedFields.value)));
     return;
   }
+
+  pending.value += 1;
   loading.value = true;
-  const response = await GetCompareTable(items.value, selectedFields.value);
-  columns.value = response.columns;
-  availableFields.value = response.item_fields;
-  notFound.value = response.not_found;
-  loading.value = false;
+  try {
+    await Promise.all(requests);
+    fetchedFields.value = Array.from(new Set(fetchedFields.value.concat(selectedFields.value)));
+  } finally {
+    pending.value -= 1;
+    loading.value = pending.value > 0;
+  }
+}
+
+// Cached columns are never re-read, so an edit on disk needs an explicit reload
+async function reload() {
+  columnCache.value = {};
+  notFoundCache.value = [];
+  fetchedFields.value = [];
+  await load();
 }
 
 // Staging is only picked up when entering the view. Later on an empty list
@@ -85,6 +165,13 @@ function onFieldsUpdate(fields: string[]) {
   updateQuery(items.value, fields);
 }
 
+function removeAllMissing() {
+  updateQuery(
+    items.value.filter(item => !notFound.value.includes(item)),
+    selectedFields.value
+  );
+}
+
 function clearAll() {
   updateQuery([], selectedFields.value);
 }
@@ -102,20 +189,25 @@ function clearAll() {
       type="warning"
       variant="tonal"
       class="mt-4"
-      closable
     >
-      Could not find {{ notFound.join(", ") }} in this workspace.
-      <v-btn
-        v-for="id in notFound"
-        :key="id"
-        variant="text"
-        size="small"
-        @click="onRemove(id)"
-      >Remove {{ id }}</v-btn>
+      Could not find {{ notFound.length }} of the requested models in this workspace.
+      <div class="missing-row">
+        <v-btn
+          v-for="id in notFound"
+          :key="id"
+          variant="text"
+          size="small"
+          @click="onRemove(id)"
+        >Remove {{ id }}</v-btn>
+      </div>
+      <template #append>
+        <v-btn variant="text" size="small" @click="removeAllMissing">Remove all missing</v-btn>
+      </template>
     </v-alert>
 
     <div v-if="items.length" class="header-row">
       <span class="text">{{ columns.length }} model(s) in comparison</span>
+      <v-btn variant="text" size="small" @click="reload">Reload</v-btn>
       <v-btn variant="text" size="small" @click="clearAll">Clear all</v-btn>
     </div>
 
@@ -148,6 +240,12 @@ function clearAll() {
   align-items: center;
   gap: 8px;
   margin-top: 16px;
+}
+
+.missing-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .empty {

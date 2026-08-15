@@ -137,7 +137,10 @@ function display(value: any): string {
           <tr>
             <th class="field-column">slug</th>
             <th v-for="column in props.columns" :key="column.id" class="slug-cell">
-              {{ column.slug }}
+              <span v-if="column.slug">{{ column.slug }}</span>
+              <span v-else class="slug-missing" title="The SLUG file of this model is missing">
+                no slug
+              </span>
             </th>
           </tr>
         </thead>
@@ -204,6 +207,11 @@ function display(value: any): string {
 .slug-cell {
   font-weight: normal;
   white-space: nowrap;
+}
+
+.slug-missing {
+  color: #DB504A;
+  font-style: italic;
 }
 
 .model-link {
