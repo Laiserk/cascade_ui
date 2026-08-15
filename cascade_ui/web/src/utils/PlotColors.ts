@@ -6,8 +6,8 @@ export const SERIES_COLORS = [
   "#8B5FBF",
   "#EE6123",
   "#003091",
-  "#00F7FF",
-  "#000000",
+  "#A3A3A3",
+  "#00BB19",
 ];
 
 export function seriesColor(index: number): string {
