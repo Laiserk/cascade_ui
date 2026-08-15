@@ -6,6 +6,7 @@ import LineSearchBar from "@/components/LineSearchBar.vue";
 import MetricChart from "@/components/MetricChart.vue";
 import GetPlotSeries from "@/utils/GetPlotSeries";
 import type { PlotSeries } from "@/models/Plots";
+import { seriesColor } from "@/utils/PlotColors";
 
 const route = useRoute();
 const router = useRouter();
@@ -203,10 +204,12 @@ function clearAll() {
 
     <div v-if="series.length" class="line-row">
       <v-chip
-        v-for="item in series"
+        v-for="(item, index) in series"
         :key="item.id"
+        :color="seriesColor(index)"
+        class="line-chip"
         closable
-        variant="outlined"
+        variant="flat"
         @click:close="onRemove(item.id)"
       >
         <router-link
@@ -279,13 +282,22 @@ function clearAll() {
   margin-top: 8px;
 }
 
+.line-chip {
+  color: #fff;
+}
+
+.line-chip :deep(.v-chip__close) {
+  color: #fff;
+}
+
 .line-link {
-  color: #084C61;
+  color: #fff;
   text-decoration: none;
 }
 
 .line-count {
-  color: #555;
+  color: #fff;
+  opacity: 0.75;
   margin-left: 8px;
 }
 

@@ -2,10 +2,9 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import * as echarts from "echarts";
 import type { PlotSeries } from "@/models/Plots";
+import { seriesColor } from "@/utils/PlotColors";
 
 const props = defineProps<{ series: PlotSeries[], field: string }>();
-
-const COLORS = ["#FA003F", "#177E89", "#DEB841", "#4C243B", "#8B5FBF", "EE6123", "003091", "00F7FF", "000000"];
 
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
@@ -67,8 +66,8 @@ const chartSeries = computed(() => {
         const value = byNum[num];
         return typeof value === "number" && !isNaN(value) ? value : null;
       }),
-      lineStyle: { color: COLORS[index % COLORS.length] },
-      itemStyle: { color: COLORS[index % COLORS.length] }
+      lineStyle: { color: seriesColor(index) },
+      itemStyle: { color: seriesColor(index) }
     };
   });
 });
