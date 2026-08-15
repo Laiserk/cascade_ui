@@ -14,9 +14,7 @@ const emit = defineEmits<{
   (e: "update:selectedFields", fields: string[]): void;
 }>();
 
-const baseFields = ["name", "slug", "tags", "created_at", "saved_at"];
-// These differ between any two models by definition, tinting them is only noise
-const identityFields = ["name", "slug"];
+const baseFields = ["tags", "created_at", "saved_at"];
 
 const hideIdentical = ref(false);
 const draftFields = ref<string[]>([...props.selectedFields]);
@@ -56,13 +54,8 @@ function differs(field: string): boolean {
 
 const rows = computed(() => {
   return allFields.value
-    .map(field => ({
-      field: field,
-      // Identity rows are never highlighted and never hidden
-      differs: identityFields.includes(field) ? false : differs(field),
-      pinned: identityFields.includes(field)
-    }))
-    .filter(row => !hideIdentical.value || row.differs || row.pinned);
+    .map(field => ({ field: field, differs: differs(field) }))
+    .filter(row => !hideIdentical.value || row.differs);
 });
 
 function isTags(field: string, value: any): boolean {
@@ -106,7 +99,7 @@ function display(value: any): string {
     </div>
 
     <div class="table-scroll">
-      <v-table class="compare-table">
+      <v-table class="compare-table" fixed-header>
         <thead>
           <tr>
             <th class="field-column">Field</th>
@@ -136,6 +129,13 @@ function display(value: any): string {
               </div>
             </th>
           </tr>
+          <!-- Numbers repeat across lines, the slug sticks together with the header -->
+          <tr>
+            <th class="field-column">slug</th>
+            <th v-for="column in props.columns" :key="column.id" class="slug-cell">
+              {{ column.slug }}
+            </th>
+          </tr>
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.field" :class="{ differs: row.differs }">
@@ -161,14 +161,22 @@ function display(value: any): string {
   gap: 24px;
 }
 
-/* Comparisons get wide, the table scrolls instead of the page */
 .table-scroll {
-  overflow-x: auto;
   max-width: 100%;
 }
 
 .compare-table {
   min-width: 100%;
+}
+
+.compare-table :deep(.v-table__wrapper) {
+  max-height: calc(100vh - 340px);
+  min-height: 240px;
+}
+
+/* Fixed headers are painted with the theme surface colour by default */
+.compare-table :deep(thead th) {
+  background-color: #FFFDF5 !important;
 }
 
 .field-column {
@@ -187,6 +195,11 @@ function display(value: any): string {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.slug-cell {
+  font-weight: normal;
+  white-space: nowrap;
 }
 
 .model-link {
