@@ -138,4 +138,37 @@ if __name__ == "__main__":
 
             line.save(model)
 
+    line = repo.add_line("long_line", line_type="model")
+
+    train_loss = random.random()
+    test_loss = random.random()
+
+    for i in range(1000):
+        model = BasicModel()
+        model.describe(fake.text())
+
+        model.add_metric(
+            Metric(
+                name="loss",
+                value=random.random(),
+                dataset="dataset",
+                split="train",
+                direction="down",
+                extra=None,
+            )
+        )
+
+        model.add_metric(
+            Metric(
+                name="loss",
+                value=random.random(),
+                dataset="dataset",
+                split="test",
+                direction="down",
+                extra=None,
+            )
+        )
+
+        line.save(model)
+
     shutil.rmtree("tmp")
