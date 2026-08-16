@@ -7,6 +7,7 @@ import ModelView from '../views/ModelView.vue'
 import DatasetView from '../views/DatasetView.vue'
 import ModelCompareView from '../views/ModelCompareView.vue'
 import PlotsView from '../views/PlotsView.vue'
+import QueryView from '../views/QueryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,6 +26,11 @@ const router = createRouter({
       path: '/plots',
       name: 'plots',
       component: PlotsView
+    },
+    {
+      path: '/query',
+      name: 'query',
+      component: QueryView
     },
     {
         path: '/repos/:repoName',

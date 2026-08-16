@@ -222,3 +222,21 @@ class PlotResponse(pydantic.BaseModel):
     series: List[PlotSeries]
     plot_fields: List[str]
     not_found: List[str]
+
+
+class QueryRequest(pydantic.BaseModel):
+    columns: List[str] = ["slug"]
+    filter_expr: Optional[str] = None
+    sort_expr: Optional[str] = None
+    desc: bool = False
+    offset: int = 0
+    limit: int = 50
+
+
+class QueryResponse(pydantic.BaseModel):
+    columns: List[str]
+    rows: List[Dict[str, Any]]
+    has_next: bool
+    time_s: float
+    workspace_root: str
+    error: Optional[str] = None
