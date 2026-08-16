@@ -30,6 +30,7 @@ from cascade.base import (
     supported_meta_formats,
 )
 from cascade.base.utils import flatten_dict
+from cascade.cli.query import Executor, Field, Query
 from cascade.lines import DataLine, ModelLine
 from cascade.workspaces import Workspace
 
@@ -59,6 +60,8 @@ from .models import (
     PlotRequest,
     PlotResponse,
     PlotSeries,
+    QueryRequest,
+    QueryResponse,
     RepoCard,
     RepoPathSpec,
     RepoResponse,
@@ -73,6 +76,24 @@ CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
 ITEM_INDEX_TTL_SEC = 60
 
 ITEM_BASE_FIELDS = ("name", "slug", "tags", "created_at", "saved_at")
+
+
+def json_safe(value: Any) -> Any:
+    """
+    Unwraps the ``Field`` objects the query executor returns for nested meta.
+
+    A column that resolves to a dict or to a list of dicts comes back as
+    ``Field``, which is not JSON serializable, so every value is unwrapped
+    before it leaves the server.
+    """
+
+    if isinstance(value, Field):
+        return json_safe(value.to_dict())
+    if isinstance(value, dict):
+        return {key: json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    return value
 
 
 class TimedCache:
@@ -566,6 +587,55 @@ class Server:
             series=series,
             plot_fields=list(sorted(all_plot_fields)),
             not_found=not_found,
+        )
+
+    def query(self, req: QueryRequest) -> QueryResponse:
+        """
+        Runs a Cascade query against the whole workspace.
+        """
+
+        empty = QueryResponse(
+            columns=req.columns,
+            rows=[],
+            has_next=False,
+            time_s=0.0,
+            workspace_root=self._ws_name,
+        )
+
+        if not req.columns:
+            empty.error = (
+                "Provide at least one column name."
+                " Columns are meta fields, for example: created_at"
+            )
+            return empty
+
+        q = Query(
+            columns=req.columns,
+            filter_expr=req.filter_expr or None,
+            sort_expr=req.sort_expr or None,
+            desc=req.desc,
+            offset=req.offset,
+            limit=req.limit + 1,
+        )
+
+        try:
+            result = Executor(self._ws_name, "workspace").execute(q)
+        except Exception as e:
+            empty.error = str(e) or type(e).__name__
+            return empty
+
+        has_next = len(result.data) > req.limit
+        rows = [
+            {key: json_safe(value) for key, value in row.items()}
+            for row in result.data[: req.limit]
+        ]
+
+        return QueryResponse(
+            columns=result.columns,
+            rows=rows,
+            has_next=has_next,
+            time_s=result.time_s,
+            workspace_root=self._ws_name,
         )
 
     def _file_size_string(self, size_bytes: int) -> str:

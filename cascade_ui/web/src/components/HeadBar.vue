@@ -19,6 +19,10 @@
         <v-icon :icon="mdiChartLine" size="24"/>
         <span>Plots</span>
       </router-link>
+      <router-link class="nav-link" :to="{ name: 'query' }">
+        <v-icon :icon="mdiDatabaseSearch" size="24"/>
+        <span>Query</span>
+      </router-link>
     </div>
     <a href="https://github.com/Oxid15/cascade">
       <div class="icon" style="margin-right: 10px">
@@ -64,7 +68,7 @@
 <script lang="ts" setup>
 import IconGitHub from "@/components/icons/IconGithub.vue";
 import { useCompareStore } from "@/utils/CompareStore";
-import { mdiChartLine, mdiScaleBalance } from "@mdi/js";
+import { mdiChartLine, mdiDatabaseSearch, mdiScaleBalance } from "@mdi/js";
 
 const store = useCompareStore();
 </script>

@@ -61,6 +61,7 @@ def run(path: str, host: str, port: int):
     app.add_api_route("/v1/add_comment", server.add_comment, methods=["post"])
     app.add_api_route("/v1/compare_item_table", server.compare_item_table, methods=["post"])
     app.add_api_route("/v1/plot_line_series", server.plot_line_series, methods=["post"])
+    app.add_api_route("/v1/query", server.query, methods=["post"])
     app.add_api_route(
         "/v1/search/item/suggestions", server.item_search_suggestions, methods=["post"]
     )

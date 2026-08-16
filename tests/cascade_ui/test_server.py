@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import json
 import os
 import sys
 
@@ -21,7 +22,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
 sys.path.append(BASE_DIR)
-from cascade_ui.models import CompareRequest, ItemSearchRequest, PlotRequest
+from cascade_ui.models import (
+    CompareRequest,
+    ItemSearchRequest,
+    PlotRequest,
+    QueryRequest,
+)
 from cascade_ui.server import LinePathSpec, ModelPathSpec, RepoPathSpec, Server
 
 
@@ -391,3 +397,100 @@ def test_plot_series_reports_unknown_lines(compare_workspace):
     # The data line is not in the index, so it is not plottable either
     assert response.not_found == ["no/such_line", "second/00001"]
     assert [series.id for series in response.series] == ["first/00000"]
+
+
+def test_query_spans_every_repo(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["path"]))
+
+    assert response.error is None
+    repos = {row["path"].split(os.sep)[-3] for row in response.rows}
+    assert repos == {"first", "second"}
+
+
+def test_query_includes_data_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["name", "path"]))
+
+    names = [row["name"] for row in response.rows]
+    assert "cascade.data.dataset.Wrapper" in names
+
+
+def test_query_returns_serializable_nested_fields(compare_workspace):
+    """
+    The executor hands back Field objects for nested meta, they have to be
+    unwrapped or the response cannot be encoded
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["params", "metrics", "tags"]))
+
+    assert response.error is None
+    json.dumps(response.rows)
+    assert {"lr": 0.1, "batch_size": 32} in [row["params"] for row in response.rows]
+
+
+def test_query_filters_rows(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["params"], filter_expr="params.lr == 0.1"))
+
+    assert response.error is None
+    assert len(response.rows) == 1
+    assert response.rows[0]["params"]["lr"] == 0.1
+
+
+def test_query_sorts_both_ways(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    def slugs(desc):
+        response = s.query(
+            QueryRequest(columns=["slug"], sort_expr="created_at", desc=desc)
+        )
+        return [row["slug"] for row in response.rows]
+
+    ascending = slugs(False)
+    assert ascending == list(reversed(slugs(True)))
+
+
+def test_query_reports_next_page(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    first = s.query(QueryRequest(columns=["path"], limit=1))
+    assert len(first.rows) == 1
+    assert first.has_next
+
+    last = s.query(QueryRequest(columns=["path"], offset=3, limit=1))
+    assert len(last.rows) == 1
+    assert not last.has_next
+    assert last.rows[0]["path"] != first.rows[0]["path"]
+
+
+def test_query_reports_broken_expression(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["slug"], filter_expr="params.lr >"))
+
+    assert response.rows == []
+    assert "invalid syntax" in response.error
+
+
+def test_query_refuses_dangerous_expression(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["slug"], filter_expr="open('/etc/passwd')"))
+
+    assert response.rows == []
+    assert "dangerous" in response.error
+
+
+def test_query_needs_a_column(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=[]))
+
+    assert response.rows == []
+    assert "at least one column" in response.error
