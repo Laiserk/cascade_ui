@@ -16,7 +16,7 @@ export interface QueryResponse {
     error: string | null;
 }
 
-export const DEFAULT_COLUMNS = ["name", "slug"];
+export const DEFAULT_COLUMNS = ["path", "slug", "created_at"];
 export const DEFAULT_LIMIT = 50;
 
 const SHELL_SAFE = /^[A-Za-z0-9_.\-/]+$/;
