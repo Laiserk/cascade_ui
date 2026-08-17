@@ -68,6 +68,9 @@ def run(path: str, host: str, port: int):
     app.add_api_route(
         "/v1/search/line/suggestions", server.line_search_suggestions, methods=["post"]
     )
+    app.add_api_route(
+        "/v1/search/nav/suggestions", server.nav_search_suggestions, methods=["post"]
+    )
 
     app.mount(
         "/assets",

@@ -19,7 +19,7 @@ import json
 import os
 import time
 import warnings
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from cascade import __version__ as cascade_version
 from cascade.base import (
@@ -56,6 +56,9 @@ from .models import (
     LogResponse,
     ModelPathSpec,
     ModelResponse,
+    NavSearchRequest,
+    NavSuggestion,
+    NavSuggestions,
     PlotPoint,
     PlotRequest,
     PlotResponse,
@@ -76,6 +79,14 @@ CLS2TYPE = {DataLine: "data_line", ModelLine: "model_line"}
 ITEM_INDEX_TTL_SEC = 60
 
 ITEM_BASE_FIELDS = ("name", "slug", "tags", "created_at", "saved_at")
+
+NAV_TYPE_ORDER = {
+    "repo": 0,
+    "model_line": 1,
+    "data_line": 1,
+    "model": 2,
+    "dataset": 2,
+}
 
 
 def json_safe(value: Any) -> Any:
@@ -402,7 +413,9 @@ class Server:
 
         return aligned(0) or aligned(len(segments) - len(parts))
 
-    def _match_item(self, query: str, item: ItemSuggestion) -> bool:
+    def _match_item(
+        self, query: str, item: Union[ItemSuggestion, NavSuggestion]
+    ) -> bool:
         """
         Matches a query against an item path, see ``_match_path``.
         Slugs are matched as substrings.
@@ -416,7 +429,9 @@ class Server:
     def _is_exact_path(self, query: str, path: str) -> bool:
         return query.strip().strip("/").lower() == path.lower()
 
-    def _is_exact_match(self, query: str, item: ItemSuggestion) -> bool:
+    def _is_exact_match(
+        self, query: str, item: Union[ItemSuggestion, NavSuggestion]
+    ) -> bool:
         query = query.strip().strip("/").lower()
         return query == item.path.lower() or (
             item.slug is not None and query == item.slug.lower()
@@ -439,6 +454,83 @@ class Server:
         matched.sort(key=lambda line: not self._is_exact_path(req.query, line.path))
 
         return LineSuggestions(items=matched[: req.limit], total=len(matched))
+
+    def iterate_over_nav_targets(self) -> Iterator[NavSuggestion]:
+        """
+        Walks over everything the global search can jump to: repos, lines, models and datasets
+        """
+
+        for repo_name in self._ws.get_repo_names():
+            repo = self._ws[repo_name]
+            yield NavSuggestion(
+                type="repo", path=repo_name, repo=repo_name, len=len(repo)
+            )
+
+            for line_name in repo.get_line_names():
+                line = repo[line_name]
+                line_type = CLS2TYPE.get(type(line))
+                if line_type is None:
+                    continue
+
+                line_path = "/".join((repo_name, line_name))
+                yield NavSuggestion(
+                    type=line_type,
+                    path=line_path,
+                    repo=repo_name,
+                    line=line_name,
+                    len=len(line),
+                )
+
+                for item_name in line.get_item_names():
+                    item_path = "/".join((line_path, item_name))
+                    if line_type == "model_line":
+                        try:
+                            num = int(item_name)
+                        except ValueError:
+                            continue
+
+                        yield NavSuggestion(
+                            type="model",
+                            path=item_path,
+                            repo=repo_name,
+                            line=line_name,
+                            name=item_name,
+                            num=num,
+                            slug=self._read_slug(repo_name, line_name, item_name),
+                        )
+                    else:
+                        yield NavSuggestion(
+                            type="dataset",
+                            path=item_path,
+                            repo=repo_name,
+                            line=line_name,
+                            name=item_name,
+                        )
+
+    def _get_nav_index(self) -> List[NavSuggestion]:
+        index = self._timed_cache.get("nav_index")
+        if index is None:
+            index = list(self.iterate_over_nav_targets())
+            self._timed_cache.add("nav_index", index)
+        return index
+
+    def nav_search_suggestions(self, req: NavSearchRequest) -> NavSuggestions:
+        kinds = set(req.kinds) if req.kinds else None
+        matched = [
+            target
+            for target in self._get_nav_index()
+            if (kinds is None or target.type in kinds)
+            and self._match_item(req.query, target)
+        ]
+        matched.sort(
+            key=lambda target: (
+                not self._is_exact_match(req.query, target),
+                NAV_TYPE_ORDER[target.type],
+                target.path,
+            )
+        )
+
+        return NavSuggestions(items=matched[: req.limit], total=len(matched))
 
     def _resolve_line(self, identifier: str) -> Optional[LineSuggestion]:
         """

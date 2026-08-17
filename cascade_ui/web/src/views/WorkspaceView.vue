@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import NavBar from "../components/NavBar.vue";
 import ListRepos from "@/components/ListRepos.vue";
+import NavSearchBar from "@/components/NavSearchBar.vue";
 import CommentFeed from "@/components/CommentFeed.vue";
 import GetWorkspace from "@/utils/GetWorkspace";
 import GetVersionInfo from "@/utils/GetVersionInfo"
@@ -45,6 +46,7 @@ async function loadWorkspaceData() {
     <div class="welcome">
       Welcome to Cascade!
     </div>
+    <NavSearchBar/>
     <div class="main-columns">
       <div style="flex: 1;">
         <Suspense>
