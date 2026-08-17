@@ -25,6 +25,7 @@ sys.path.append(BASE_DIR)
 from cascade_ui.models import (
     CompareRequest,
     ItemSearchRequest,
+    NavSearchRequest,
     PlotRequest,
     QueryRequest,
 )
@@ -133,6 +134,91 @@ def test_suggestions_limit_keeps_total(compare_workspace):
     assert suggestions.total == 3
 
 
+def types_by_path(suggestions):
+    return {item.path: item.type for item in suggestions.items}
+
+
+def test_nav_index_covers_every_type(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    index = s._get_nav_index()
+
+    assert types_by_path(s.nav_search_suggestions(NavSearchRequest(query=""))) == {
+        "first": "repo",
+        "second": "repo",
+        "first/00000": "model_line",
+        "second/00000": "model_line",
+        "second/00001": "data_line",
+        "first/00000/00000": "model",
+        "first/00000/00001": "model",
+        "second/00000/00000": "model",
+        "second/00001/0.1": "dataset",
+    }
+    # Containers know their size, models carry a slug, datasets carry neither
+    assert [t.len for t in index if t.path == "first"] == [1]
+    assert all(t.slug for t in index if t.type == "model")
+    assert all(t.slug is None and t.num is None for t in index if t.type == "dataset")
+
+
+def test_nav_search_matches_paths_and_slugs(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # Datasets have no slug, so a full path is the only way to reach one
+    assert paths_of(
+        s.nav_search_suggestions(NavSearchRequest(query="second/00001/0.1"))
+    ) == ["second/00001/0.1"]
+
+    slug = [t for t in s._get_nav_index() if t.type == "model"][0].slug
+    assert paths_of(s.nav_search_suggestions(NavSearchRequest(query=slug))) == [
+        t.path for t in s._get_nav_index() if t.slug == slug
+    ]
+
+    # Same anchoring rules as the item search
+    assert s.nav_search_suggestions(NavSearchRequest(query="econd")).total == 0
+
+
+def test_nav_search_puts_exact_match_first(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # "first" also matches both of its children, but the repo itself wins
+    suggestions = s.nav_search_suggestions(NavSearchRequest(query="first"))
+
+    assert suggestions.items[0].path == "first"
+    assert suggestions.items[0].type == "repo"
+    assert suggestions.total == 4
+
+
+def test_nav_search_ranks_containers_above_items(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    kinds = [
+        item.type
+        for item in s.nav_search_suggestions(NavSearchRequest(query="fir")).items
+    ]
+
+    assert kinds == ["repo", "model_line", "model", "model"]
+
+
+def test_nav_search_filters_by_kind(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.nav_search_suggestions(
+        NavSearchRequest(query="", kinds=["dataset"])
+    )
+
+    assert paths_of(suggestions) == ["second/00001/0.1"]
+    assert suggestions.total == 1
+
+
+def test_nav_search_limit_keeps_total(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.nav_search_suggestions(NavSearchRequest(query="", limit=2))
+
+    assert len(suggestions.items) == 2
+    assert suggestions.total == 9
+
+
 def test_compare_resolves_slug_path_and_num(compare_workspace):
     s = Server(compare_workspace.get_root())
     slug = s._resolve_item("first/00000/00001").slug
@@ -167,7 +253,9 @@ def test_slugless_model_stays_usable(compare_workspace):
     assert "first/00000/00001" in paths_of(suggestions)
     assert suggestions.total == 3
 
-    slugless = [item for item in suggestions.items if item.path == "first/00000/00001"][0]
+    slugless = [item for item in suggestions.items if item.path == "first/00000/00001"][
+        0
+    ]
     assert slugless.slug is None
     assert slugless.num == 1
 
@@ -443,17 +531,32 @@ def test_query_filters_rows(compare_workspace):
     assert response.rows[0]["params"]["lr"] == 0.1
 
 
-def test_query_sorts_both_ways(compare_workspace):
+def test_query_sorts_both_ways_keeping_none_last(compare_workspace):
+    """
+    Only the first repo sets params.lr, so the other rows sort as None and
+    they stay at the end in both directions
+    """
+
     s = Server(compare_workspace.get_root())
 
-    def slugs(desc):
+    def lrs(desc):
         response = s.query(
-            QueryRequest(columns=["slug"], sort_expr="created_at", desc=desc)
+            QueryRequest(columns=["params.lr"], sort_expr="params.lr", desc=desc)
         )
-        return [row["slug"] for row in response.rows]
+        assert response.error is None
+        return [row["params.lr"] for row in response.rows]
 
-    ascending = slugs(False)
-    assert ascending == list(reversed(slugs(True)))
+    ascending = lrs(False)
+    descending = lrs(True)
+
+    assert ascending == [0.01, 0.1, None, None]
+    assert descending == [0.1, 0.01, None, None]
+
+    # The values that are present are reversed, the Nones are not moved
+    present = [value for value in ascending if value is not None]
+    assert [value for value in descending if value is not None] == list(
+        reversed(present)
+    )
 
 
 def test_query_reports_next_page(compare_workspace):
@@ -481,7 +584,9 @@ def test_query_reports_broken_expression(compare_workspace):
 def test_query_refuses_dangerous_expression(compare_workspace):
     s = Server(compare_workspace.get_root())
 
-    response = s.query(QueryRequest(columns=["slug"], filter_expr="open('/etc/passwd')"))
+    response = s.query(
+        QueryRequest(columns=["slug"], filter_expr="open('/etc/passwd')")
+    )
 
     assert response.rows == []
     assert "dangerous" in response.error

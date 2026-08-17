@@ -23,9 +23,8 @@ function isTags(column: string, value: any): boolean {
 /**
  * Turns an absolute model path into a route to its page.
  *
- * Only model nums are linked: dataset versions live under the same URL
- * pattern and the router resolves that pattern to the model view, so a
- * dataset link would land on the wrong page
+ * Only numeric item names are linked, which is what tells a model apart from
+ * a dataset here, since dataset rows carry a version like 0.1 instead
  */
 function modelRoute(value: any) {
   if (typeof value !== "string" || !props.workspaceRoot) return null;

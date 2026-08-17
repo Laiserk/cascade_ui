@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic
 
+Type = Literal["repo", "model_line", "data_line", "model", "dataset"]
+
 
 class Container(pydantic.BaseModel):
     name: str
@@ -195,6 +197,39 @@ class LineSuggestion(pydantic.BaseModel):
 
 class LineSuggestions(pydantic.BaseModel):
     items: List[LineSuggestion]
+    total: int
+
+
+class NavSearchRequest(pydantic.BaseModel):
+    query: str
+    limit: int = 50
+    kinds: Optional[List[Type]] = None
+
+
+class NavSuggestion(pydantic.BaseModel):
+    """
+    Jump target of the global search.
+    Same model for repo, line, model or dataset so some fields are optional
+
+    * ``line`` for models and datasets
+    * ``name`` for models and datasets
+    * ``num`` for models only, datasets are versioned with strings
+    * ``slug`` for models only and may still be None
+    * ``len`` is the count of a items in a container
+    """
+
+    type: Type
+    path: str
+    repo: str
+    line: Optional[str] = None
+    name: Optional[str] = None
+    num: Optional[int] = None
+    slug: Optional[str] = None
+    len: Optional[int] = None
+
+
+class NavSuggestions(pydantic.BaseModel):
+    items: List[NavSuggestion]
     total: int
 
 
