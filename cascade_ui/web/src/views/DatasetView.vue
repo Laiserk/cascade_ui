@@ -14,6 +14,10 @@ import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router'
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
 import CommentFeed from "@/components/CommentFeed.vue";
+import EnvTable from "@/components/EnvTable.vue";
+import PipelineGraph from "@/components/PipelineGraph.vue";
+
+const tab = ref(0);
 
 const route = useRoute()
 const router = useRouter()
@@ -131,34 +135,48 @@ function goToDataset(datasetVer: string) {
               </div>
             </div>
           </div>
-          <div class="dataset-info">
-            <p class="slug"> {{ dataset?.name }}</p>
-            <p class="text"> {{ dataset?.path }}</p>
-            <div class="tags-row" v-if="dataset?.tags && dataset.tags.length">
-              <v-chip
-                v-for="tag in dataset.tags"
-                :key="tag"
-                class="tag-chip"
-                :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
-                background="#D9D7DD"
-                text-color="#555"
-                outlined
-              >
-                {{ tag }}
-              </v-chip>
+          <div class="tabs-column">
+            <v-tabs v-model="tab" class="custom-tabs">
+              <v-tab class="custom-tab">General</v-tab>
+              <v-tab class="custom-tab">Pipeline</v-tab>
+            </v-tabs>
+            <div v-if="tab === 0" class="general-tab-flex">
+              <div class="dataset-info">
+                <p class="slug"> {{ dataset?.name }}</p>
+                <p class="text"> {{ dataset?.path }}</p>
+                <div class="tags-row" v-if="dataset?.tags && dataset.tags.length">
+                  <v-chip
+                    v-for="tag in dataset.tags"
+                    :key="tag"
+                    class="tag-chip"
+                    :style="{ height: '20px', 'font-size': '13px', 'margin-right': '8px', 'margin-bottom': '8px' }"
+                    background="#D9D7DD"
+                    text-color="#555"
+                    outlined
+                  >
+                    {{ tag }}
+                  </v-chip>
+                </div>
+                <p class="text"> Saved: {{ dataset?.saved_at }}</p>
+                <div style="margin-top: 20px">
+                  <p class="text"> {{ dataset?.description }}</p>
+                </div>
+                <EnvTable v-if="dataset" :tr="dataset"/>
+              </div>
+              <CommentFeed
+                v-if="dataset"
+                :comments="dataset.comments"
+                :pathParts="[repoName, lineName, datasetVer]"
+                :onCommentSent="loadDatasetData"
+              />
             </div>
-            <p class="text"> Saved: {{ dataset?.saved_at }}</p>
-            <div style="margin-top: 20px">
-              <p class="text"> {{ dataset?.description }}</p>
-            </div>
-            <EnvTable v-if="dataset" :tr="dataset"/>
+            <PipelineGraph
+              v-if="tab === 1 && dataset"
+              :repo="repoName"
+              :line="lineName"
+              :ver="datasetVer"
+            />
           </div>
-          <CommentFeed
-            v-if="dataset"
-            :comments="dataset.comments"
-            :pathParts="[repoName, lineName, datasetVer]"
-            :onCommentSent="loadDatasetData"
-          />
         </div>
       </div>
     </div>
@@ -213,12 +231,37 @@ function goToDataset(datasetVer: string) {
   background: #D9D7DD;
   color: #555;
 }
+.tabs-column {
+  flex: 1;
+  min-width: 0;
+  margin-top: 20px;
+}
+.general-tab-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100%;
+}
 .dataset-info {
   margin-top: 20px;
   flex: 0 1 70%;
   min-width: 0;
   margin-left: 0;
   margin-right: 0;
+}
+.custom-tabs {
+  background-color: #F5E6B2;
+  border-radius: 8px;
+}
+.custom-tab {
+  color: #DEB841 !important;
+  background-color: #FFFDF5 !important;
+  transition: background 0.2s, color 0.2s;
+}
+.custom-tab.v-tab--active,
+.custom-tab:hover {
+  background-color: #E8D496 !important;
+  color: #fff !important;
 }
 .slug {
   font-family: Roboto;

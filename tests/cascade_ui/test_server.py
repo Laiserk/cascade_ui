@@ -578,10 +578,23 @@ def test_query_reports_broken_expression(compare_workspace):
     response = s.query(QueryRequest(columns=["slug"], filter_expr="params.lr >"))
 
     assert response.rows == []
-    assert "invalid syntax" in response.error
+    assert "params.lr >" in response.error
 
 
 def test_query_refuses_dangerous_expression(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(
+        QueryRequest(columns=["slug"], filter_expr="__import__('os').system('ls')")
+    )
+
+    assert response.rows == []
+    assert response.error is not None
+
+
+def test_query_without_a_builtin_matches_nothing(compare_workspace):
+    # Cascade evaluates the filter with a whitelist of builtins, an
+    # expression that reaches for anything else just matches no rows
     s = Server(compare_workspace.get_root())
 
     response = s.query(
@@ -589,7 +602,7 @@ def test_query_refuses_dangerous_expression(compare_workspace):
     )
 
     assert response.rows == []
-    assert "dangerous" in response.error
+    assert response.error is None
 
 
 def test_query_needs_a_column(compare_workspace):

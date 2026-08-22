@@ -126,6 +126,36 @@ class DatasetResponse(Traceable):
     git_uncommitted_changes: Optional[List[str]] = None
 
 
+class PipelineNode(pydantic.BaseModel):
+    """
+    A single step of a data pipeline
+
+    * ``name`` is the full path of a class like ``cascade.data.dataset.Wrapper``
+    * ``label`` is the class name only
+    * ``meta`` is the meta block of the step without the metas of its inputs
+    """
+
+    id: str
+    name: str
+    label: str
+    meta: Dict[str, Any]
+
+
+class PipelineEdge(pydantic.BaseModel):
+    """
+    Points from a step to the one that takes its data
+    """
+
+    id: str
+    source: str
+    target: str
+
+
+class PipelineResponse(pydantic.BaseModel):
+    nodes: List[PipelineNode]
+    edges: List[PipelineEdge]
+
+
 class VersionResponse(pydantic.BaseModel):
     cascade_ml_version: str
     cascade_ui_version: str
