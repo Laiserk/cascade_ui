@@ -59,6 +59,7 @@ from .models import (
     NavSearchRequest,
     NavSuggestion,
     NavSuggestions,
+    PipelineResponse,
     PlotPoint,
     PlotRequest,
     PlotResponse,
@@ -71,6 +72,7 @@ from .models import (
     VersionResponse,
     WorkspaceResponse,
 )
+from .pipeline import build_pipeline_graph
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -842,6 +844,13 @@ class Server:
             git_commit=meta[0]["git_commit"],
             git_uncommitted_changes=meta[0]["git_uncommitted_changes"],
         )
+
+    def dataset_pipeline(self, path: DatasetPathSpec) -> PipelineResponse:
+        line = self._ws[path.repo].add_line(path.line, line_type="data")
+        meta = line.load_obj_meta(path.ver)
+
+        nodes, edges = build_pipeline_graph(meta)
+        return PipelineResponse(nodes=nodes, edges=edges)
 
     def version(self):
         return VersionResponse(

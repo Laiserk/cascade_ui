@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from cascade.data import Wrapper
+from cascade.data import ApplyModifier, Concatenator, RangeSampler, Wrapper
 from cascade.models import BasicModel
 from cascade.workspaces import Workspace
 from pytest import fixture
@@ -55,5 +55,32 @@ def compare_workspace(tmp_path) -> Workspace:
 
     data_line = second.add_line(line_type="data")
     data_line.save(Wrapper([0, 1, 2]))
+
+    return ws
+
+
+@fixture
+def pipeline_workspace(tmp_path) -> Workspace:
+    """
+    One data line with a branching pipeline saved into it
+
+        Wrapper   Wrapper
+             \\     /
+          Concatenator
+               |
+          RangeSampler
+               |
+          ApplyModifier
+    """
+
+    tmp_path = str(tmp_path)
+    ws = Workspace(tmp_path)
+
+    repo = ws.add_repo("repo")
+    data_line = repo.add_line("data", line_type="data")
+
+    concat = Concatenator([Wrapper([0, 1, 2]), Wrapper([3, 4])])
+    ds = ApplyModifier(RangeSampler(concat, 0, 4), lambda x: x + 1)
+    data_line.save(ds, only_meta=True)
 
     return ws

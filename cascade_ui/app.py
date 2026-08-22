@@ -56,6 +56,7 @@ def run(path: str, host: str, port: int):
     app.add_api_route("/v1/run_log", server.run_log, methods=["post"])
     app.add_api_route("/v1/run_config", server.run_config, methods=["post"])
     app.add_api_route("/v1/dataset", server.dataset, methods=["post"])
+    app.add_api_route("/v1/dataset_pipeline", server.dataset_pipeline, methods=["post"])
     app.add_api_route("/v1/version", server.version, methods=["get"])
     app.add_api_route("/v1/line_item_table", server.line_item_table, methods=["post"])
     app.add_api_route("/v1/add_comment", server.add_comment, methods=["post"])
