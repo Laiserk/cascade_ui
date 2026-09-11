@@ -1,7 +1,7 @@
-import type {Dataset} from "@/models/Dataset";
+import type {Pipeline} from "@/models/Pipeline";
 
-export default async function GetDataset(repo: string, line: string, ver: string): Promise<Dataset> {
-  return fetch('/v1/dataset', {
+export default async function GetPipeline(repo: string, line: string, ver: string): Promise<Pipeline> {
+  return fetch('/v1/dataset_pipeline', {
     method: "post",
     headers: {
       "Access-Control-Allow-Origin": "*",

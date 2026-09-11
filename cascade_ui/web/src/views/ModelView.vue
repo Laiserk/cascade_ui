@@ -19,6 +19,8 @@ import { useRoute, useRouter } from 'vue-router'
 import ConfigView from "@/components/ConfigView.vue";
 import { openWorkspace, openRepo, openLine } from "@/utils/Open";
 import CommentFeed from "@/components/CommentFeed.vue";
+import { useCompareStore } from "@/utils/CompareStore";
+import { mdiClose, mdiScaleBalance } from "@mdi/js";
 
 const route = useRoute()
 const router = useRouter()
@@ -129,12 +131,32 @@ function copySlug() {
   }
 }
 
+const compareStore = useCompareStore();
+const compareFeedback = ref("");
+
+const compareId = computed(() => {
+  if (model.value?.slug) return model.value.slug;
+  return [repoName.value, lineName.value, modelNumString.value].join("/");
+});
+
+const inCompare = computed(() => compareStore.has(compareId.value));
+
+function toggleCompare() {
+  if (compareStore.has(compareId.value)) {
+    compareStore.remove(compareId.value);
+    compareFeedback.value = "Removed from comparison";
+  } else {
+    compareStore.add(compareId.value);
+    compareFeedback.value = "Added to comparison";
+  }
+}
+
 // Add copy for path
 const copyPathFeedback = ref("");
 function copyPath() {
   if (model.value?.path) {
     navigator.clipboard.writeText(model.value.path);
-    copyPathFeedback.value = "Copied!";
+    copyPathFeedback.value = "Copied";
     setTimeout(() => {
       copyPathFeedback.value = "";
     }, 1200);
@@ -178,7 +200,6 @@ function copyPath() {
                       <button
                         v-if="model?.slug"
                         @click="copySlug"
-                        title="Copy slug"
                         class="copy-btn"
                         style="background: none; border: none; cursor: pointer; padding: 0;"
                       >
@@ -187,7 +208,24 @@ function copyPath() {
                           alt="Copy"
                           style="width: 18px; height: 18px; display: block;"
                         />
+                        <v-tooltip activator="parent" location="top">Copy slug</v-tooltip>
                       </button>
+                      <v-btn
+                        v-if="model"
+                        icon
+                        variant="text"
+                        size="x-small"
+                        @click="toggleCompare"
+                      >
+                        <v-icon
+                          :icon="inCompare ? mdiClose : mdiScaleBalance"
+                          :color="inCompare ? '#DEB841' : undefined"
+                          size="20"
+                        />
+                        <v-tooltip activator="parent" location="top">
+                          {{ inCompare ? "Remove from comparison" : "Add to compare" }}
+                        </v-tooltip>
+                      </v-btn>
                       <span
                         v-if="copyFeedback || true"
                         class="copy-feedback"
@@ -199,7 +237,6 @@ function copyPath() {
                       <button
                         v-if="model?.path"
                         @click="copyPath"
-                        title="Copy path"
                         class="copy-btn"
                         style="background: none; border: none; cursor: pointer; padding: 0;"
                       >
@@ -208,6 +245,7 @@ function copyPath() {
                           alt="Copy"
                           style="width: 18px; height: 18px; display: block;"
                         />
+                        <v-tooltip activator="parent" location="top">Copy path</v-tooltip>
                       </button>
                       <span
                         v-if="copyPathFeedback || true"
@@ -313,6 +351,16 @@ function copyPath() {
         </div>
       </div>
     </div>
+    <v-snackbar
+      :model-value="compareFeedback.length > 0"
+      :timeout="2000"
+      @update:model-value="compareFeedback = ''"
+    >
+      {{ compareFeedback }}
+      <template #actions>
+        <v-btn variant="text" :to="{ name: 'compare' }">View</v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 

@@ -5,8 +5,8 @@ import GetLine from "@/utils/GetLine";
 import GetWorkspace from "@/utils/GetWorkspace";
 import ListItems from "@/components/ListItems.vue";
 import CommentFeed from "@/components/CommentFeed.vue";
-import PlotsView from "@/components/PlotsView.vue";
 import { ref, onMounted, computed } from "vue";
+import { mdiChartLine } from "@mdi/js";
 import { Repo as RepoClass } from "@/models/Repo";
 import {ModelLine} from "@/models/ModelLine";
 import type {Repo} from "@/models/Repo";
@@ -14,23 +14,11 @@ import type {Workspace} from "@/models/Workspace";
 import { Workspace as WorkspaceClass } from "@/models/Workspace";
 import { useRoute, useRouter } from 'vue-router';
 import { openWorkspace, openRepo } from "@/utils/Open";
-import { LinePathSpec } from "@/models/PathSpecs";
 
 const route = useRoute();
 const router = useRouter();
 const repoName = computed(() => route.params.repoName as string);
 const lineName = computed(() => route.params.lineName as string);
-
-const linePath = computed(() => {
-  if (repo.value && line.value) {
-    return new LinePathSpec({
-      repo: repo.value.name,
-      line: line.value.name,
-      lineType: line.value.type,
-    });
-  }
-  return null;
-});
 
 const workspace = ref<Workspace | null>(null);
 const repo = ref<Repo | null>(null);
@@ -89,11 +77,18 @@ function onBreadcrumbClick(e: any) {
   <div>
     <NavBar/>
     <div class="content">
-      <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
+      <div class="breadcrumbs-row">
+        <v-breadcrumbs :items="breadcrumbs" @click:item="onBreadcrumbClick"></v-breadcrumbs>
+        <v-btn
+          variant="text"
+          size="small"
+          :prepend-icon="mdiChartLine"
+          :to="{ name: 'plots', query: { lines: `${repoName}/${lineName}` } }"
+        >Plots</v-btn>
+      </div>
       <v-tabs v-model="tab" class="custom-tabs" grow>
         <v-tab class="custom-tab">General</v-tab>
         <v-tab class="custom-tab">Comments</v-tab>
-        <v-tab class="custom-tab">Plots</v-tab>
       </v-tabs>
       <v-tabs-items v-model="tab">
         <v-tab-item>
@@ -111,15 +106,6 @@ function onBreadcrumbClick(e: any) {
             />
           </div>
         </v-tab-item>
-        <v-tab-item>
-          <div v-if="tab === 2">
-            <PlotsView
-              v-if="line && linePath"
-              :line="line"
-              :linePath="linePath"
-            />
-          </div>
-        </v-tab-item>
       </v-tabs-items>
     </div>
   </div>
@@ -129,6 +115,12 @@ function onBreadcrumbClick(e: any) {
 .content {
   margin-left: 60px;
   margin-right: 60px;
+}
+
+.breadcrumbs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .custom-tabs {

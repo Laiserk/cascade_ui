@@ -5,23 +5,24 @@ Please make sure to update tests and docs as appropriate.
 
 ## Developer setup
 
-Go to the repo's root dir and install the package with
+1. Follow [UI docs](cascade_ui/web/README.md) to build the web part locally.
+
+2. Go to the repo's root dir and install the package with
 ```bash
 pip3 install -e .
 ```
 *(You may want to create a venv for this)*
 
-Then create dummy workspace for tests
+3. Then create dummy workspace for tests
 
 ```bash
 python3 scripts/create_dummy_workspace.py
 ```
 
-Run server inside this workspace (use latest Cascade)
+4. Run server inside this workspace (use latest Cascade)
 
 ```bash
 cd dummy_workspace
-venv\scripts\activate
 ```
 
 ```bash

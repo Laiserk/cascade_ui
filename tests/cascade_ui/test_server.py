@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import json
 import os
 import sys
 
@@ -21,6 +22,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
 sys.path.append(BASE_DIR)
+from cascade_ui.models import (
+    CompareRequest,
+    ItemSearchRequest,
+    NavSearchRequest,
+    PlotRequest,
+    QueryRequest,
+)
 from cascade_ui.server import LinePathSpec, ModelPathSpec, RepoPathSpec, Server
 
 
@@ -47,3 +55,560 @@ def test_model(workspace):
     s = Server(path)
     model = s.model(ModelPathSpec(repo="repo", line="00000", num=0))
     assert len(model.artifacts) == 0
+
+
+def paths_of(suggestions):
+    return [item.path for item in suggestions.items]
+
+
+def test_item_index_skips_data_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    index = s._get_item_index()
+
+    assert paths_of(s.item_search_suggestions(ItemSearchRequest(query=""))) == [
+        item.path for item in index
+    ]
+    assert sorted(item.path for item in index) == [
+        "first/00000/00000",
+        "first/00000/00001",
+        "second/00000/00000",
+    ]
+    assert all(item.slug for item in index)
+    assert [item.num for item in index if item.repo == "first"] == [0, 1]
+
+
+def test_suggestions_head_anchored(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    assert sorted(
+        paths_of(s.item_search_suggestions(ItemSearchRequest(query="fir")))
+    ) == [
+        "first/00000/00000",
+        "first/00000/00001",
+    ]
+    assert paths_of(
+        s.item_search_suggestions(ItemSearchRequest(query="first/00000/00001"))
+    ) == ["first/00000/00001"]
+
+
+def test_suggestions_tail_anchored(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    assert paths_of(
+        s.item_search_suggestions(ItemSearchRequest(query="00000/00001"))
+    ) == ["first/00000/00001"]
+    # A bare number matches model names, but not the line with the same name
+    assert sorted(
+        paths_of(s.item_search_suggestions(ItemSearchRequest(query="00000")))
+    ) == [
+        "first/00000/00000",
+        "second/00000/00000",
+    ]
+
+
+def test_suggestions_do_not_match_mid_segment(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    assert s.item_search_suggestions(ItemSearchRequest(query="irst/00000")).total == 0
+    assert s.item_search_suggestions(ItemSearchRequest(query="0000/00001")).total == 0
+
+
+def test_suggestions_match_slug_substring(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    slug = s._get_item_index()[0].slug
+    middle = slug.split("_")[1]
+
+    suggestions = s.item_search_suggestions(ItemSearchRequest(query=middle))
+
+    assert slug in [item.slug for item in suggestions.items]
+
+
+def test_suggestions_limit_keeps_total(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.item_search_suggestions(ItemSearchRequest(query="", limit=2))
+
+    assert len(suggestions.items) == 2
+    assert suggestions.total == 3
+
+
+def types_by_path(suggestions):
+    return {item.path: item.type for item in suggestions.items}
+
+
+def test_nav_index_covers_every_type(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    index = s._get_nav_index()
+
+    assert types_by_path(s.nav_search_suggestions(NavSearchRequest(query=""))) == {
+        "first": "repo",
+        "second": "repo",
+        "first/00000": "model_line",
+        "second/00000": "model_line",
+        "second/00001": "data_line",
+        "first/00000/00000": "model",
+        "first/00000/00001": "model",
+        "second/00000/00000": "model",
+        "second/00001/0.1": "dataset",
+    }
+    # Containers know their size, models carry a slug, datasets carry neither
+    assert [t.len for t in index if t.path == "first"] == [1]
+    assert all(t.slug for t in index if t.type == "model")
+    assert all(t.slug is None and t.num is None for t in index if t.type == "dataset")
+
+
+def test_nav_search_matches_paths_and_slugs(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # Datasets have no slug, so a full path is the only way to reach one
+    assert paths_of(
+        s.nav_search_suggestions(NavSearchRequest(query="second/00001/0.1"))
+    ) == ["second/00001/0.1"]
+
+    slug = [t for t in s._get_nav_index() if t.type == "model"][0].slug
+    assert paths_of(s.nav_search_suggestions(NavSearchRequest(query=slug))) == [
+        t.path for t in s._get_nav_index() if t.slug == slug
+    ]
+
+    # Same anchoring rules as the item search
+    assert s.nav_search_suggestions(NavSearchRequest(query="econd")).total == 0
+
+
+def test_nav_search_puts_exact_match_first(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # "first" also matches both of its children, but the repo itself wins
+    suggestions = s.nav_search_suggestions(NavSearchRequest(query="first"))
+
+    assert suggestions.items[0].path == "first"
+    assert suggestions.items[0].type == "repo"
+    assert suggestions.total == 4
+
+
+def test_nav_search_ranks_containers_above_items(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    kinds = [
+        item.type
+        for item in s.nav_search_suggestions(NavSearchRequest(query="fir")).items
+    ]
+
+    assert kinds == ["repo", "model_line", "model", "model"]
+
+
+def test_nav_search_filters_by_kind(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.nav_search_suggestions(
+        NavSearchRequest(query="", kinds=["dataset"])
+    )
+
+    assert paths_of(suggestions) == ["second/00001/0.1"]
+    assert suggestions.total == 1
+
+
+def test_nav_search_limit_keeps_total(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.nav_search_suggestions(NavSearchRequest(query="", limit=2))
+
+    assert len(suggestions.items) == 2
+    assert suggestions.total == 9
+
+
+def test_compare_resolves_slug_path_and_num(compare_workspace):
+    s = Server(compare_workspace.get_root())
+    slug = s._resolve_item("first/00000/00001").slug
+
+    response = s.compare_item_table(
+        CompareRequest(items=[slug, "second/00000/00000", "first/00000/0"])
+    )
+
+    assert [column.path for column in response.columns] == [
+        "first/00000/00001",
+        "second/00000/00000",
+        "first/00000/00000",
+    ]
+    # The identifier is echoed back as requested so the UI can round-trip the URL
+    assert response.columns[0].id == slug
+    assert response.columns[2].id == "first/00000/0"
+    assert response.not_found == []
+
+
+def test_slugless_model_stays_usable(compare_workspace):
+    """
+    A model whose SLUG file failed to be written is still a model. It must not
+    take down the index for the whole workspace
+    """
+
+    root = compare_workspace.get_root()
+    os.remove(os.path.join(root, "first", "00000", "00001", "SLUG"))
+
+    s = Server(root)
+
+    suggestions = s.item_search_suggestions(ItemSearchRequest(query=""))
+    assert "first/00000/00001" in paths_of(suggestions)
+    assert suggestions.total == 3
+
+    slugless = [item for item in suggestions.items if item.path == "first/00000/00001"][
+        0
+    ]
+    assert slugless.slug is None
+    assert slugless.num == 1
+
+    # It has no slug to be addressed by, so the path has to keep working
+    response = s.compare_item_table(CompareRequest(items=["first/00000/00001"]))
+    assert response.not_found == []
+    assert response.columns[0].slug is None
+    assert response.columns[0].num == 1
+
+
+def test_items_that_are_not_models_are_skipped(compare_workspace):
+    root = compare_workspace.get_root()
+    os.makedirs(os.path.join(root, "first", "00000", "not_a_model"))
+
+    s = Server(root)
+
+    assert "first/00000/not_a_model" not in paths_of(
+        s.item_search_suggestions(ItemSearchRequest(query=""))
+    )
+
+
+def test_compare_resolves_slug_case_insensitively(compare_workspace):
+    """
+    Slugs come from a lowercase wordlist, so a hand typed URL should still work
+    """
+
+    s = Server(compare_workspace.get_root())
+    slug = s._resolve_item("first/00000/00000").slug
+
+    response = s.compare_item_table(CompareRequest(items=[slug.upper()]))
+
+    assert response.not_found == []
+    assert response.columns[0].path == "first/00000/00000"
+
+
+def test_compare_keeps_paths_case_sensitive(compare_workspace):
+    """
+    Unlike slugs, paths are directory names where the case is meaningful
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(CompareRequest(items=["FIRST/00000/00000"]))
+
+    assert response.columns == []
+    assert response.not_found == ["FIRST/00000/00000"]
+
+
+def test_compare_reports_available_fields_per_column(compare_workspace):
+    """
+    The client rebuilds the row picker from the columns it holds, so each one
+    has to carry its own fields and not just the union
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(
+        CompareRequest(items=["first/00000/00000", "second/00000/00000"])
+    )
+
+    first, second = response.columns
+    assert "params.lr" in first.available_fields
+    assert "params.lr" not in second.available_fields
+    assert "params.momentum" in second.available_fields
+
+    union = set(first.available_fields) | set(second.available_fields)
+    assert union == set(response.item_fields)
+
+
+def test_compare_reports_not_found(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(
+        CompareRequest(items=["no_such_slug", "first/00000/00000"])
+    )
+
+    assert response.not_found == ["no_such_slug"]
+    assert len(response.columns) == 1
+
+
+def test_compare_data_line_items_are_not_comparable(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(CompareRequest(items=["second/00001/00000"]))
+
+    assert response.columns == []
+    assert response.not_found == ["second/00001/00000"]
+
+
+def test_compare_base_fields_and_field_union(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.compare_item_table(
+        CompareRequest(
+            items=["first/00000/00000", "second/00000/00000"],
+            item_fields=["params.lr", "params.batch_size"],
+        )
+    )
+
+    for column in response.columns:
+        assert set(column.meta).issuperset(
+            {"name", "slug", "tags", "created_at", "saved_at"}
+        )
+
+    assert response.columns[0].meta["name"] == "00000"
+    assert response.columns[0].meta["params.lr"] == 0.1
+    assert response.columns[0].meta["params.batch_size"] == 32
+    # Requested for every column, missing ones come back as None
+    assert response.columns[1].meta["params.lr"] is None
+
+    # The union spans both models even though neither has all of the params
+    assert {"params.lr", "params.batch_size", "params.momentum"}.issubset(
+        response.item_fields
+    )
+
+
+def test_line_index_skips_data_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # second/00001 is the data line of the fixture and has nothing to plot
+    assert sorted(line.path for line in s._get_line_index()) == [
+        "first/00000",
+        "second/00000",
+    ]
+    assert all(line.type == "model_line" for line in s._get_line_index())
+
+
+def test_line_suggestions_report_length(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    lines = {
+        line.path: line
+        for line in s.line_search_suggestions(ItemSearchRequest(query="")).items
+    }
+
+    assert lines["first/00000"].len == 2
+    assert lines["second/00000"].len == 1
+    assert lines["first/00000"].repo == "first"
+    assert lines["first/00000"].line == "00000"
+
+
+def test_line_suggestions_anchoring(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    # Head-anchored on the repo, tail-anchored on the line name
+    assert paths_of(s.line_search_suggestions(ItemSearchRequest(query="fir"))) == [
+        "first/00000"
+    ]
+    assert sorted(
+        paths_of(s.line_search_suggestions(ItemSearchRequest(query="00000")))
+    ) == ["first/00000", "second/00000"]
+    assert paths_of(
+        s.line_search_suggestions(ItemSearchRequest(query="first/00000"))
+    ) == ["first/00000"]
+
+    # Mid-segment queries must not match, same rule as item search
+    assert s.line_search_suggestions(ItemSearchRequest(query="irst")).total == 0
+    assert s.line_search_suggestions(ItemSearchRequest(query="0000/00000")).total == 0
+
+
+def test_line_suggestions_limit_keeps_total(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    suggestions = s.line_search_suggestions(ItemSearchRequest(query="", limit=1))
+
+    assert len(suggestions.items) == 1
+    assert suggestions.total == 2
+
+
+def test_plot_series_points_follow_the_line(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(
+        PlotRequest(lines=["first/00000"], fields=["params.lr"])
+    )
+
+    assert response.not_found == []
+    assert len(response.series) == 1
+
+    series = response.series[0]
+    assert series.id == "first/00000"
+    assert series.path == "first/00000"
+    assert [point.num for point in series.points] == [0, 1]
+    assert [point.values["params.lr"] for point in series.points] == [0.1, 0.01]
+    assert all(point.slug for point in series.points)
+
+
+def test_plot_series_field_union_and_missing_values(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(
+        PlotRequest(
+            lines=["first/00000", "second/00000"],
+            fields=["params.lr", "params.momentum"],
+        )
+    )
+
+    # The union spans both lines even though neither line has all of the params
+    assert {"params.lr", "params.batch_size", "params.momentum"}.issubset(
+        response.plot_fields
+    )
+    # Per line the fields are only the ones that line actually has
+    assert "params.momentum" not in response.series[0].plot_fields
+    assert "params.momentum" in response.series[1].plot_fields
+
+    # A field the line does not have comes back as None rather than raising
+    assert response.series[0].points[0].values["params.momentum"] is None
+    assert response.series[1].points[0].values["params.lr"] is None
+
+
+def test_plot_series_fields_are_available_before_one_is_chosen(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(PlotRequest(lines=["first/00000"]))
+
+    assert response.series[0].points[0].values == {}
+    assert "params.lr" in response.plot_fields
+
+
+def test_plot_series_reports_unknown_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.plot_line_series(
+        PlotRequest(lines=["first/00000", "no/such_line", "second/00001"])
+    )
+
+    # The data line is not in the index, so it is not plottable either
+    assert response.not_found == ["no/such_line", "second/00001"]
+    assert [series.id for series in response.series] == ["first/00000"]
+
+
+def test_query_spans_every_repo(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["path"]))
+
+    assert response.error is None
+    repos = {row["path"].split(os.sep)[-3] for row in response.rows}
+    assert repos == {"first", "second"}
+
+
+def test_query_includes_data_lines(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["name", "path"]))
+
+    names = [row["name"] for row in response.rows]
+    assert "cascade.data.dataset.Wrapper" in names
+
+
+def test_query_returns_serializable_nested_fields(compare_workspace):
+    """
+    The executor hands back Field objects for nested meta, they have to be
+    unwrapped or the response cannot be encoded
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["params", "metrics", "tags"]))
+
+    assert response.error is None
+    json.dumps(response.rows)
+    assert {"lr": 0.1, "batch_size": 32} in [row["params"] for row in response.rows]
+
+
+def test_query_filters_rows(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["params"], filter_expr="params.lr == 0.1"))
+
+    assert response.error is None
+    assert len(response.rows) == 1
+    assert response.rows[0]["params"]["lr"] == 0.1
+
+
+def test_query_sorts_both_ways_keeping_none_last(compare_workspace):
+    """
+    Only the first repo sets params.lr, so the other rows sort as None and
+    they stay at the end in both directions
+    """
+
+    s = Server(compare_workspace.get_root())
+
+    def lrs(desc):
+        response = s.query(
+            QueryRequest(columns=["params.lr"], sort_expr="params.lr", desc=desc)
+        )
+        assert response.error is None
+        return [row["params.lr"] for row in response.rows]
+
+    ascending = lrs(False)
+    descending = lrs(True)
+
+    assert ascending == [0.01, 0.1, None, None]
+    assert descending == [0.1, 0.01, None, None]
+
+    # The values that are present are reversed, the Nones are not moved
+    present = [value for value in ascending if value is not None]
+    assert [value for value in descending if value is not None] == list(
+        reversed(present)
+    )
+
+
+def test_query_reports_next_page(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    first = s.query(QueryRequest(columns=["path"], limit=1))
+    assert len(first.rows) == 1
+    assert first.has_next
+
+    last = s.query(QueryRequest(columns=["path"], offset=3, limit=1))
+    assert len(last.rows) == 1
+    assert not last.has_next
+    assert last.rows[0]["path"] != first.rows[0]["path"]
+
+
+def test_query_reports_broken_expression(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=["slug"], filter_expr="params.lr >"))
+
+    assert response.rows == []
+    assert "params.lr >" in response.error
+
+
+def test_query_refuses_dangerous_expression(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(
+        QueryRequest(columns=["slug"], filter_expr="__import__('os').system('ls')")
+    )
+
+    assert response.rows == []
+    assert response.error is not None
+
+
+def test_query_without_a_builtin_matches_nothing(compare_workspace):
+    # Cascade evaluates the filter with a whitelist of builtins, an
+    # expression that reaches for anything else just matches no rows
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(
+        QueryRequest(columns=["slug"], filter_expr="open('/etc/passwd')")
+    )
+
+    assert response.rows == []
+    assert response.error is None
+
+
+def test_query_needs_a_column(compare_workspace):
+    s = Server(compare_workspace.get_root())
+
+    response = s.query(QueryRequest(columns=[]))
+
+    assert response.rows == []
+    assert "at least one column" in response.error

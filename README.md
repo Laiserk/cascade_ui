@@ -1,6 +1,6 @@
 # Cascade UI
 
-Web-based UI for [Cascade](https://oxid15.github.io/cascade/en/latest/) - MLOps library for small teams and individuals.
+Web UI for [Cascade](https://oxid15.github.io/cascade/en/latest/) - Small-scale MLOps library
 
 
 ## Installation

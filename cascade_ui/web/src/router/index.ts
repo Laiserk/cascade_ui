@@ -1,10 +1,13 @@
-import {createRouter, createWebHistory} from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import WorkspaceView from '../views/WorkspaceView.vue'
 import RepoView from '../views/RepoView.vue'
 import ModelLineView from '../views/ModelLineView.vue'
 import DataLineView from '../views/DataLineView.vue'
 import ModelView from '../views/ModelView.vue'
 import DatasetView from '../views/DatasetView.vue'
+import ModelCompareView from '../views/ModelCompareView.vue'
+import PlotsView from '../views/PlotsView.vue'
+import QueryView from '../views/QueryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,27 +18,42 @@ const router = createRouter({
       component: WorkspaceView
     },
     {
-        path: '/repos/:repoName',
-        name: 'repo',
-        component: RepoView
+      path: '/compare',
+      name: 'compare',
+      component: ModelCompareView
     },
     {
-      path: '/repos/:repoName/:lineName',
+      path: '/plots',
+      name: 'plots',
+      component: PlotsView
+    },
+    {
+      path: '/query',
+      name: 'query',
+      component: QueryView
+    },
+    {
+      path: '/repos/:repoName',
+      name: 'repo',
+      component: RepoView
+    },
+    {
+      path: '/repos/:repoName/lines/:lineName',
       name: 'model_line',
       component: ModelLineView
     },
     {
-      path: '/repos/:repoName/:lineName',
-      name: 'data_line',
-      component: DataLineView
-    },
-    {
-      path: '/repos/:repoName/:lineName/:modelNumString',
+      path: '/repos/:repoName/lines/:lineName/:modelNumString',
       name: 'model',
       component: ModelView
     },
     {
-      path: '/repos/:repoName/:lineName/:datasetVer',
+      path: '/repos/:repoName/datalines/:lineName',
+      name: 'data_line',
+      component: DataLineView
+    },
+    {
+      path: '/repos/:repoName/datalines/:lineName/:datasetVer',
       name: 'dataset',
       component: DatasetView
     },

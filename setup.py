@@ -5,11 +5,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="cascade-ui",
-    version="0.2.1",
+    version="0.3.0",
     author="Oleg Sevostyanov,Ilia Moiseev",
     author_email="ilia.moiseev.5@yandex.ru",
     license="Apache License 2.0",
-    description="Web-UI for Cascade - Lightweight and modular MLOps library targeted at small teams or individuals ",
+    description="Web-UI for Cascade - Small-scale MLOps library targeted at small teams or individuals",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/laiserk/cascade_ui",
